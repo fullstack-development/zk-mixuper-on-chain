@@ -73,6 +73,7 @@ library
   exposed-modules:
     Fib
     MyLib
+    SimpleValidator
 
   hs-source-dirs:  src
   build-depends:
