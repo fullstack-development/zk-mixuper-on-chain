@@ -29,6 +29,7 @@ common common-lang
   default-extensions:
     NoStarIsType
     BangPatterns
+    BlockArguments
     ConstraintKinds
     DataKinds
     DeriveAnyClass
@@ -69,9 +70,16 @@ library
   import:          common-lang
   import:          common-configs
   import:          common-deps
-  exposed-modules: MyLib
+  exposed-modules:
+    Fib
+    MyLib
+
   hs-source-dirs:  src
-  build-depends:   plutarch
+  build-depends:
+    , data-default
+    , plutarch
+    , plutus-core
+    , text
 
 -- Modules included in this library but not exported.
 -- other-modules:
