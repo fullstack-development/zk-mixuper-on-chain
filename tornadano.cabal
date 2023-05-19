@@ -73,11 +73,14 @@ library
   exposed-modules:
     Fib
     MyLib
+    Run
     SimpleValidator
 
   hs-source-dirs:  src
   build-depends:
+    , bytestring
     , data-default
+    , lens
     , plutarch
     , plutus-core
     , text
