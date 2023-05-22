@@ -70,7 +70,9 @@ library
   import:          common-lang
   import:          common-configs
   import:          common-deps
-  exposed-modules: Mixer.Datum
+  exposed-modules:
+    Mixer.Datum
+    Mixer.Script
   hs-source-dirs:  src
   build-depends:
     , bytestring
