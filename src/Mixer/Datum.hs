@@ -1,8 +1,8 @@
 module Mixer.Datum where
 
-import Plutarch.Prelude
-import Plutarch.Api.V2 (PTuple, PCurrencySymbol, PTokenName)
+import Plutarch.Api.V2 (PCurrencySymbol, PTokenName, PTuple)
 import Plutarch.DataRepr (PDataFields)
+import Plutarch.Prelude
 
 -- | A type for representing hash digests.
 type PHash = PByteString
@@ -32,4 +32,12 @@ newtype MixerConfig (s :: S)
   deriving anyclass (PlutusType, PDataFields, PIsData)
 
 instance DerivePlutusType MixerConfig where
+  type DPTStrat _ = PlutusTypeData
+
+newtype MixerDatum (s :: S)
+  = MixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList PInteger]))
+  deriving stock (Generic)
+  deriving anyclass (PlutusType, PDataFields, PIsData)
+
+instance DerivePlutusType MixerDatum where
   type DPTStrat _ = PlutusTypeData
