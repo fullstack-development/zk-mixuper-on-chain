@@ -65,6 +65,7 @@ common common-lang
     TypeFamilyDependencies
     TypeOperators
     TypeSynonymInstances
+    ViewPatterns
 
 library
   import:          common-lang
@@ -73,6 +74,7 @@ library
   exposed-modules:
     Mixer.Datum
     Mixer.Script
+
   hs-source-dirs:  src
   build-depends:
     , bytestring
