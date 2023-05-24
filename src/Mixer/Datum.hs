@@ -35,9 +35,12 @@ instance DerivePlutusType MixerConfig where
   type DPTStrat _ = PlutusTypeData
 
 newtype MixerDatum (s :: S)
-  = MixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList PInteger]))
+  = MixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList (PAsData PInteger)]))
   deriving stock (Generic)
-  deriving anyclass (PlutusType, PDataFields, PIsData)
+  deriving anyclass (PlutusType, PDataFields, PIsData, PEq)
 
 instance DerivePlutusType MixerDatum where
   type DPTStrat _ = PlutusTypeData
+
+instance PTryFrom PData MixerDatum
+instance PTryFrom PData (PAsData MixerDatum)

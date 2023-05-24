@@ -1,6 +1,6 @@
 module Mixer.Script where
 
-import Ext.Plutarch.Api.V2.Contexts (pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
+import Ext.Plutarch.Api.V2.Contexts (inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Mixer.Datum (MixerConfig, MixerDatum (..), MixerRedeemer (..), PCommitment)
 import Plutarch.Api.V2 (
   PDatum,
@@ -34,6 +34,8 @@ validatorLogic = plam $ \conf (pfromData -> d) (pfromData -> r) ctx' -> P.do
     -- Find own output:
     ownOutput <- pletFields @'["value", "datum"] $ pgetOnlyOneOutputFromList #$ pgetContinuingOutputs # info.outputs # ownInputResolved
     -- Get produced datum:
+    (nextState, _) <- ptryFrom @MixerDatum $ inlineDatumFromOutput # ownOutput.datum
+    -- Allowed transitions given a redeemer:
     plet (pfield @"value" # ownInputResolved) $ \inputValue -> P.do
       pmatch r \case
         Deposit c -> unTermCont do
