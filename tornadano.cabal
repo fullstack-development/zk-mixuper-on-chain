@@ -73,6 +73,7 @@ library
   import:          common-deps
   exposed-modules:
     Ext.Plutarch.Api.V2.Contexts
+    Ext.Plutarch.Api.V2.Value
     Mixer.Datum
     Mixer.Script
 
