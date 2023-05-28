@@ -2,8 +2,8 @@ module Mixer.Script where
 
 import Ext.Plutarch.Api.V2.Contexts (inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Ext.Plutarch.Api.V2.Value (SortedPositiveValue)
-import Mixer.Datum (MixerConfig, MixerDatum (..), MixerRedeemer (..), PCommitment)
-import Plutarch.Api.V1.Value (plovelaceValueOf)
+import Mixer.Datum (MixerConfig, MixerDatum (..), MixerRedeemer (..), PAssetClass, PCommitment)
+import Plutarch.Api.V1.Value (plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
   PScriptContext,
@@ -12,7 +12,7 @@ import Plutarch.Api.V2 (
   PTxOut,
  )
 import Plutarch.DataRepr (HRec, HRecOf, PMemberFields)
-import Plutarch.Extra.TermCont (pguardC)
+import Plutarch.Extra.TermCont (pguardC, pletFieldsC)
 import qualified Plutarch.Monadic as P
 import Plutarch.Prelude
 
@@ -33,23 +33,24 @@ validatorLogic = plam \(pfromData -> config) (pfromData -> d) (pfromData -> r) c
   PSpending i <- pmatch ctx.purpose
   let ownInputRef = pfield @"_0" # i
   PJust ownInput <- pmatch $ pfindOwnInput # info.inputs # ownInputRef
-  plet (pfield @"resolved" # ownInput) \ownInputResolved -> P.do
-    -- Find own output:
-    ownOutput <- pletFields @'["value", "datum"] $ pgetOnlyOneOutputFromList #$ pgetContinuingOutputs # info.outputs # ownInputResolved
-    -- Get produced datum:
-    (nextState, _) <- ptryFrom @MixerDatum $ inlineDatumFromOutput # ownOutput.datum
-    outputState <- pletFields @'["nullifierHashes"] nextState
-    plet (ownOutput.value) \outputValue -> P.do
-      -- TODO Check protocol token
-      conf <- pletFields @'["protocolToken", "poolNominal"] config
-      let inputValue = pfield @"value" # ownInputResolved
-      inputState <- pletFields @'["nullifierHashes"] d
-      -- Allowed transitions given a redeemer:
-      pmatch r \case
-        Deposit c -> unTermCont do
-          let commit = pfield @"commitment" # c
-          validateDeposit conf inputState outputState inputValue outputValue commit
-        _ -> ptraceError "Not implemented"
+  ownInputResolved <- plet (pfield @"resolved" # ownInput)
+  -- Find own output:
+  ownOutput <- pletFields @'["value", "datum"] $ pgetOnlyOneOutputFromList #$ pgetContinuingOutputs # info.outputs # ownInputResolved
+  -- Get produced datum:
+  (nextState, _) <- ptryFrom @MixerDatum $ inlineDatumFromOutput # ownOutput.datum
+  outputState <- pletFields @'["nullifierHashes"] nextState
+  outputValue <- plet (ownOutput.value)
+  -- Check protocol token:
+  conf <- pletFields @'["protocolToken", "poolNominal"] config
+  PUnit <- pmatch $ containsOneProtocolToken # conf.protocolToken # outputValue
+  let inputValue = pfield @"value" # ownInputResolved
+  inputState <- pletFields @'["nullifierHashes"] d
+  -- Allowed transitions given a redeemer:
+  pmatch r \case
+    Deposit c -> unTermCont do
+      let commit = pfield @"commitment" # c
+      validateDeposit conf inputState outputState inputValue outputValue commit
+    _ -> ptraceError "Not implemented"
 
 validateDeposit ::
   ( PMemberFields MixerDatum '["nullifierHashes"] s datum
@@ -67,3 +68,16 @@ validateDeposit conf inputState outputState inputValue outputValue commit = do
   let depositedAmount = (plovelaceValueOf # outputValue) - (plovelaceValueOf # inputValue)
   pguardC "Nominal amount should be paid to script" (depositedAmount #== conf.poolNominal)
   pure $ pconstant ()
+
+containsOneProtocolToken ::
+  Term
+    s
+    ( PAssetClass
+        :--> SortedPositiveValue
+        :--> PUnit
+    )
+containsOneProtocolToken = phoistAcyclic $
+  plam $ \assetClass val -> unTermCont do
+    protocolToken <- pletFieldsC @'["_0", "_1"] assetClass
+    pguardC "Output should contain one protocol token" $ (pvalueOf # val # protocolToken._0 # protocolToken._1) #== 1
+    pure $ pconstant ()
