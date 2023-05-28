@@ -74,6 +74,7 @@ library
   exposed-modules:
     Ext.Plutarch.Api.V2.Contexts
     Ext.Plutarch.Api.V2.Value
+    Ext.Plutarch.Extra.Run
     Mixer.Datum
     Mixer.Script
 
@@ -93,17 +94,17 @@ library
 -- LANGUAGE extensions used by modules in this package.
 -- other-extensions:
 
-executable tornadano
+executable dump-script
   import:         common-lang
   import:         common-configs
   import:         common-deps
   main-is:        Main.hs
+  other-modules:  Options
   hs-source-dirs: app
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N
-  build-depends:  tornadano
-
--- Modules included in this executable, other than Main.
--- other-modules:
+  build-depends:
+    , optparse-applicative
+    , tornadano
 
 -- LANGUAGE extensions used by modules in this package.
 -- other-extensions:
