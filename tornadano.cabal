@@ -76,16 +76,20 @@ library
     Ext.Plutarch.Api.V2.Value
     Ext.Plutarch.Extra.Run
     Mixer.Datum
+    Mixer.Datum.Plutus
     Mixer.Script
 
   hs-source-dirs:  src
   build-depends:
+    , aeson
     , bytestring
     , data-default
     , lens
     , plutarch
     , plutarch-extra
     , plutus-core
+    , plutus-ledger-api
+    , plutus-tx
     , text
 
 -- Modules included in this library but not exported.
@@ -103,7 +107,10 @@ executable dump-script
   hs-source-dirs: app
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N
   build-depends:
+    , bytestring
     , optparse-applicative
+    , plutus-ledger-api
+    , text
     , tornadano
 
 -- LANGUAGE extensions used by modules in this package.

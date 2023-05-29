@@ -2,10 +2,11 @@
 
 module Options where
 
+import Data.ByteString (ByteString)
 import Options.Applicative
 
 data MixerOpts = MixerOpts
-  { currencySymbol :: String
+  { currencySymbol :: ByteString
   , tokenName :: String
   , poolNominal :: Integer
   , scriptPath :: FilePath
