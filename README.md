@@ -19,11 +19,11 @@ nix develop
 Example in nix dev shell:
 
 ```sh
-cabal run dump-script -- -s d1ce83174feeb6ae11d95fd47cac403642cb616b244dbb32a2ca0bda -t "mixer thread" -n 100000000
+cabal run dump-script -- -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d
 ```
 
 Example if exe is build:
 
 ```sh
-result/bin/dump-script -s d1ce83174feeb6ae11d95fd47cac403642cb616b244dbb32a2ca0bda -t "mixer thread" -n 100000000
+result/bin/dump-script -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d
 ```

@@ -25,6 +25,7 @@ mixerParser =
     <*> strOption
       ( long "token-name"
           <> short 't'
+          <> value "Mixer Protocol Token"
           <> metavar "TOKEN_NAME"
           <> help "Name of protocol thread token"
       )
@@ -32,6 +33,7 @@ mixerParser =
       auto
       ( long "pool-nominal"
           <> short 'n'
+          <> value 100_000_000
           <> help "Nominal value of the mixer pool in lovelace"
           <> metavar "INT"
       )
