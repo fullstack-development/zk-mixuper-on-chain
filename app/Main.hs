@@ -13,6 +13,11 @@ import Options.Applicative (execParser)
 import PlutusLedgerApi.V1.Bytes (LedgerBytes (..), fromHex)
 import PlutusLedgerApi.V1.Value (CurrencySymbol (CurrencySymbol), TokenName, assetClass)
 import PlutusLedgerApi.V2 (toData)
+import Plutarch.Script (serialiseScript)
+import Data.ByteString.Short (ShortByteString)
+import qualified Data.ByteString.Short as SBS
+import Data.ByteString.Builder (byteStringHex, hPutBuilder)
+import System.IO (IOMode(WriteMode), withFile)
 
 main :: IO ()
 main = do
@@ -28,3 +33,9 @@ main = do
   let (script, budget, log) = either (error . T.unpack) id $ evalWithArgsT validatorLogic [config]
   putStrLn $ "Script budget: " <> show budget
   putStrLn $ "Compilation log: " <> show log
+  writeShortByteStringToFile scriptPath $ serialiseScript script
+
+writeShortByteStringToFile :: FilePath -> ShortByteString -> IO ()
+writeShortByteStringToFile filePath shortByteString =
+  withFile filePath WriteMode $ \handle ->
+    hPutBuilder handle (byteStringHex (SBS.fromShort shortByteString))
