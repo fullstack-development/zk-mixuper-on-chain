@@ -10,25 +10,38 @@ import Plutarch.Api.V2 (
   PScriptPurpose (PSpending),
   PTxInfo,
   PTxOut,
+  PValidator,
  )
 import Plutarch.DataRepr (HRec, HRecOf, PMemberFields)
 import Plutarch.Extra.TermCont (pguardC, pletFieldsC)
 import qualified Plutarch.Monadic as P
 import Plutarch.Prelude
+import PlutusCore.Data (Data)
+
+mkValidator ::
+  Data ->
+  ClosedTerm PValidator
+mkValidator config =
+  validatorLogic # P.do
+    pdat <- plet $ pconstant @PData config
+    (pconfig, _) <- ptryFrom @(PAsData PMixerConfig) pdat
+    pconfig
 
 validatorLogic ::
   forall s.
   Term
     s
     ( PAsData PMixerConfig
-        :--> PAsData PMixerDatum
-        :--> PAsData PMixerRedeemer
-        :--> PAsData PScriptContext
-        :--> PUnit
+        :--> PData
+        :--> PData
+        :--> PScriptContext
+        :--> POpaque
     )
-validatorLogic = plam \(pfromData -> config) (pfromData -> d) (pfromData -> r) ctx' -> P.do
+validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
+  (oldState, _) <- ptryFrom @PMixerDatum d
+  (redeemer, _) <- ptryFrom @PMixerRedeemer r
   ctx <- pletFields @["txInfo", "purpose"] ctx'
-  info <- pletFields @'["inputs", "outputs", "mint", "datums", "signatories"] $ ctx.txInfo
+  info <- pletFields @'["inputs", "outputs"] $ ctx.txInfo
   -- Find own input:
   PSpending i <- pmatch ctx.purpose
   let ownInputRef = pfield @"_0" # i
@@ -44,10 +57,10 @@ validatorLogic = plam \(pfromData -> config) (pfromData -> d) (pfromData -> r) c
   conf <- pletFields @'["protocolToken", "poolNominal"] config
   PUnit <- pmatch $ containsOneProtocolToken # conf.protocolToken # outputValue
   let inputValue = pfield @"value" # ownInputResolved
-  inputState <- pletFields @'["nullifierHashes"] d
+  inputState <- pletFields @'["nullifierHashes"] oldState
   -- Allowed transitions given a redeemer:
-  pmatch r \case
-    PDeposit c -> unTermCont do
+  pmatch redeemer \case
+    PDeposit c -> popaque $ unTermCont do
       let commit = pfield @"commitment" # c
       validateDeposit conf inputState outputState inputValue outputValue commit
     _ -> ptraceError "Not implemented"

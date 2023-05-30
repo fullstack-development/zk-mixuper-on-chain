@@ -109,10 +109,11 @@ executable dump-script
   build-depends:
     , bytestring
     , optparse-applicative
+    , plutarch
     , plutus-ledger-api
+    , ply-plutarch
     , text
     , tornadano
-    , plutarch
 
 -- LANGUAGE extensions used by modules in this package.
 -- other-extensions:

@@ -23,6 +23,9 @@ data PMixerRedeemer (s :: S)
 instance DerivePlutusType PMixerRedeemer where
   type DPTStrat _ = PlutusTypeData
 
+instance PTryFrom PData PMixerRedeemer
+instance PTryFrom PData (PAsData PMixerRedeemer)
+
 -- | An asset class, identified by a CurrencySymbol and a TokenName. PAssetClass :: PType
 type PAssetClass = PTuple PCurrencySymbol PTokenName
 
