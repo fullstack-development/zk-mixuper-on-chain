@@ -10,37 +10,40 @@ type PHash = PByteString
 -- | A sha-256 digest of (nullifier <> secret)
 type PCommitment = PHash
 
-type Lovelace = PInteger
+type PLovelace = PInteger
 
-data MixerRedeemer (s :: S)
-  = Deposit (Term s (PDataRecord '["commitment" := PCommitment]))
-  | Withdraw (Term s (PDataRecord '[]))
+data PMixerRedeemer (s :: S)
+  = PDeposit (Term s (PDataRecord '["commitment" := PCommitment]))
+  | PWithdraw (Term s (PDataRecord '[]))
   -- TODO(?) Close redeemer for pool operator / creator (fixed pkh)
   -- Close (Term s (PDataRecord '[]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PIsData)
 
-instance DerivePlutusType MixerRedeemer where
+instance DerivePlutusType PMixerRedeemer where
   type DPTStrat _ = PlutusTypeData
 
 -- | An asset class, identified by a CurrencySymbol and a TokenName. PAssetClass :: PType
 type PAssetClass = PTuple PCurrencySymbol PTokenName
 
-newtype MixerConfig (s :: S)
-  = MixerConfig (Term s (PDataRecord '["protocolToken" := PAssetClass, "poolNominal" := Lovelace]))
+newtype PMixerConfig (s :: S)
+  = PMixerConfig (Term s (PDataRecord '["protocolToken" := PAssetClass, "poolNominal" := PLovelace]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData)
 
-instance DerivePlutusType MixerConfig where
+instance DerivePlutusType PMixerConfig where
   type DPTStrat _ = PlutusTypeData
 
-newtype MixerDatum (s :: S)
-  = MixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList (PAsData PInteger)]))
+instance PTryFrom PData PMixerConfig
+instance PTryFrom PData (PAsData PMixerConfig)
+
+newtype PMixerDatum (s :: S)
+  = PMixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList (PAsData PInteger)]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData, PEq)
 
-instance DerivePlutusType MixerDatum where
+instance DerivePlutusType PMixerDatum where
   type DPTStrat _ = PlutusTypeData
 
-instance PTryFrom PData MixerDatum
-instance PTryFrom PData (PAsData MixerDatum)
+instance PTryFrom PData PMixerDatum
+instance PTryFrom PData (PAsData PMixerDatum)

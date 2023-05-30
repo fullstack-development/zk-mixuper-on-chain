@@ -2,7 +2,7 @@ module Mixer.Script where
 
 import Ext.Plutarch.Api.V2.Contexts (inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Ext.Plutarch.Api.V2.Value (SortedPositiveValue)
-import Mixer.Datum (MixerConfig, MixerDatum (..), MixerRedeemer (..), PAssetClass, PCommitment)
+import Mixer.Datum (PAssetClass, PCommitment, PMixerConfig, PMixerDatum (..), PMixerRedeemer (..))
 import Plutarch.Api.V1.Value (plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
@@ -20,9 +20,9 @@ validatorLogic ::
   forall s.
   Term
     s
-    ( PAsData MixerConfig
-        :--> PAsData MixerDatum
-        :--> PAsData MixerRedeemer
+    ( PAsData PMixerConfig
+        :--> PAsData PMixerDatum
+        :--> PAsData PMixerRedeemer
         :--> PAsData PScriptContext
         :--> PUnit
     )
@@ -37,7 +37,7 @@ validatorLogic = plam \(pfromData -> config) (pfromData -> d) (pfromData -> r) c
   -- Find own output:
   ownOutput <- pletFields @'["value", "datum"] $ pgetOnlyOneOutputFromList #$ pgetContinuingOutputs # info.outputs # ownInputResolved
   -- Get produced datum:
-  (nextState, _) <- ptryFrom @MixerDatum $ inlineDatumFromOutput # ownOutput.datum
+  (nextState, _) <- ptryFrom @PMixerDatum $ inlineDatumFromOutput # ownOutput.datum
   outputState <- pletFields @'["nullifierHashes"] nextState
   outputValue <- plet (ownOutput.value)
   -- Check protocol token:
@@ -47,14 +47,14 @@ validatorLogic = plam \(pfromData -> config) (pfromData -> d) (pfromData -> r) c
   inputState <- pletFields @'["nullifierHashes"] d
   -- Allowed transitions given a redeemer:
   pmatch r \case
-    Deposit c -> unTermCont do
+    PDeposit c -> unTermCont do
       let commit = pfield @"commitment" # c
       validateDeposit conf inputState outputState inputValue outputValue commit
     _ -> ptraceError "Not implemented"
 
 validateDeposit ::
-  ( PMemberFields MixerDatum '["nullifierHashes"] s datum
-  , PMemberFields MixerConfig '["poolNominal"] s config
+  ( PMemberFields PMixerDatum '["nullifierHashes"] s datum
+  , PMemberFields PMixerConfig '["poolNominal"] s config
   ) =>
   HRec config ->
   HRec datum ->
