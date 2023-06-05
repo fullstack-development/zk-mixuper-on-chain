@@ -75,9 +75,13 @@ library
     Ext.Plutarch.Api.V2.Contexts
     Ext.Plutarch.Api.V2.Value
     Ext.Plutarch.Extra.Run
+    Ext.PlutusTx.List
+    Ext.PlutusTx.Numeric
     Mixer.Datum
     Mixer.Datum.Plutus
     Mixer.Script
+    Service.MerkleTree
+    Service.MerkleTree.Plutus
 
   hs-source-dirs:  src
   build-depends:

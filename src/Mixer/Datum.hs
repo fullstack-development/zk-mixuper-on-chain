@@ -3,9 +3,7 @@ module Mixer.Datum where
 import Plutarch.Api.V2 (PCurrencySymbol, PTokenName, PTuple)
 import Plutarch.DataRepr (PDataFields)
 import Plutarch.Prelude
-
--- | A type for representing hash digests.
-type PHash = PByteString
+import Service.MerkleTree (PHash)
 
 -- | A sha-256 digest of (nullifier <> secret)
 type PCommitment = PHash
