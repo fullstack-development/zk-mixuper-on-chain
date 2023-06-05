@@ -110,12 +110,12 @@ counterToPath h n
 
 -- | Traverse a tree according to Merkle Path saving subtrees, which are complementary to the path
 splitByPathMT :: MerkleProofPath -> MerkleTree -> [MerkleTree]
-splitByPathMT path tree = snd $ foldl go (tree, []) path
+splitByPathMT path tree = snd $ foldl reducer (tree, []) path
   where
-    go (MerkleNode _ l r, acc) p
+    reducer (MerkleNode _ l r, acc) p
       | p = (r, l : acc)
       | otherwise = (l, r : acc)
-    go (t, acc) _ = (t, acc)
+    reducer (t, acc) _ = (t, acc)
 {-# INLINEABLE splitByPathMT #-}
 
 {- | Starting from inserted leaf compose new Merkle Tree from Merkle Path subtrees,
