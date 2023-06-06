@@ -8,7 +8,7 @@ import Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short as SBS
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
-import Ext.Plutarch.Extra.Run (evalWithArgsT)
+import Ext.Plutarch.Extra.Run (evalT)
 import Mixer.Datum
 import Mixer.Datum.Plutus (MixerConfig (..))
 import Mixer.Script (mkValidator, validatorLogic)
@@ -23,21 +23,28 @@ import Plutarch.Script (serialiseScript)
 import PlutusLedgerApi.V1.Bytes (LedgerBytes (..), fromHex)
 import PlutusLedgerApi.V1.Value (CurrencySymbol (CurrencySymbol), TokenName, assetClass)
 import PlutusLedgerApi.V2 (toData)
-import Ply.Plutarch
+import Ply.Plutarch ( writeTypedScript )
 import System.IO (IOMode (WriteMode), withFile)
+import Service.MerkleTree.Plutus (MerkleTreeConfig(..), zeroRoot)
 
 main :: IO ()
 main = do
   MixerOpts {..} <- execParser mixerOpts
   let ledgerTokenName :: TokenName = fromString tokenName
   ledgerCurrSymbol :: CurrencySymbol <- either throw (pure . CurrencySymbol . getLedgerBytes) $ fromHex currencySymbol
+  zeroLeaf <- either throw (pure . getLedgerBytes) $ fromHex merkleTreeZeroLeaf
   let config =
         toData
           MixerConfig
             { protocolToken = assetClass ledgerCurrSymbol ledgerTokenName
             , poolNominal = poolNominal
+            , merkleTreeConfig = MerkleTreeConfig
+                { mtcZeroRoot = zeroRoot merkleTreeHeight zeroLeaf
+                , mtcZeroLeaf = zeroLeaf
+                , mtcHeight = merkleTreeHeight
+                }
             }
-  let (script, budget, log) = either (error . T.unpack) id $ evalWithArgsT validatorLogic [config]
+  let (script, budget, log) = either (error . T.unpack) id $ evalT (mkValidator config)
   putStrLn $ "Script budget: " <> show budget
   putStrLn $ "Compilation log: " <> show log
   writeTypedScript
