@@ -34,7 +34,7 @@ data PMerkleTree (s :: S)
   | PMerkleNode (Term s (PDataRecord '["value" := PHash, "leftSubtree" := PMerkleTree, "rightSubtree" := PMerkleTree]))
   | PMerkleLeaf (Term s (PDataRecord '["value" := PHash]))
   deriving stock (Generic)
-  deriving anyclass (PlutusType, PIsData)
+  deriving anyclass (PlutusType, PIsData, PEq)
 
 instance DerivePlutusType PMerkleTree where
   type DPTStrat _ = PlutusTypeData
@@ -70,7 +70,7 @@ pmerkleNode value l r =
 newtype PMerkleTreeState (s :: S)
   = PMerkleTreeState (Term s (PDataRecord '["nextLeaf" := PNextInsertionCounter, "tree" := PMerkleTree]))
   deriving stock (Generic)
-  deriving anyclass (PlutusType, PDataFields, PIsData)
+  deriving anyclass (PlutusType, PDataFields, PIsData, PEq)
 
 instance DerivePlutusType PMerkleTreeState where
   type DPTStrat _ = PlutusTypeData
@@ -78,8 +78,10 @@ instance DerivePlutusType PMerkleTreeState where
 instance PTryFrom PData PMerkleTreeState
 instance PTryFrom PData (PAsData PMerkleTreeState)
 
-pmerkleTreeState :: Term s PNextInsertionCounter
-  -> Term s PMerkleTree -> Term s PMerkleTreeState
+pmerkleTreeState ::
+  Term s PNextInsertionCounter ->
+  Term s PMerkleTree ->
+  Term s PMerkleTreeState
 pmerkleTreeState nextCounter tree =
   pcon $
     PMerkleTreeState $

@@ -82,6 +82,7 @@ library
     Mixer.Datum
     Mixer.Datum.Plutus
     Mixer.Script
+    Mixer.Script.Deposit
     Service.MerkleTree
     Service.MerkleTree.Plutus
 

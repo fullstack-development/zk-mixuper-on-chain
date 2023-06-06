@@ -3,7 +3,7 @@ module Mixer.Datum where
 import Plutarch.Api.V2 (PCurrencySymbol, PTokenName, PTuple)
 import Plutarch.DataRepr (PDataFields)
 import Plutarch.Prelude
-import Service.MerkleTree (PHash)
+import Service.MerkleTree (PHash, PMerkleTreeConfig, PMerkleTreeState)
 
 -- | A sha-256 digest of (nullifier <> secret)
 type PCommitment = PHash
@@ -28,7 +28,7 @@ instance PTryFrom PData (PAsData PMixerRedeemer)
 type PAssetClass = PTuple PCurrencySymbol PTokenName
 
 newtype PMixerConfig (s :: S)
-  = PMixerConfig (Term s (PDataRecord '["protocolToken" := PAssetClass, "poolNominal" := PLovelace]))
+  = PMixerConfig (Term s (PDataRecord '["protocolToken" := PAssetClass, "poolNominal" := PLovelace, "merkleTreeConfig" := PMerkleTreeConfig]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData)
 
@@ -39,7 +39,7 @@ instance PTryFrom PData PMixerConfig
 instance PTryFrom PData (PAsData PMixerConfig)
 
 newtype PMixerDatum (s :: S)
-  = PMixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList (PAsData PInteger)]))
+  = PMixerDatum (Term s (PDataRecord '["nullifierHashes" := PBuiltinList (PAsData PInteger), "merkleTreeState" := PMerkleTreeState]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData, PEq)
 

@@ -3,6 +3,7 @@ module Mixer.Script where
 import Ext.Plutarch.Api.V2.Contexts (inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Ext.Plutarch.Api.V2.Value (SortedPositiveValue)
 import Mixer.Datum (PAssetClass, PCommitment, PMixerConfig, PMixerDatum (..), PMixerRedeemer (..))
+import Mixer.Script.Deposit (validateDeposit)
 import Plutarch.Api.V1.Value (plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
@@ -51,36 +52,19 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   ownOutput <- pletFields @'["value", "datum"] $ pgetOnlyOneOutputFromList #$ pgetContinuingOutputs # info.outputs # ownInputResolved
   -- Get produced datum:
   (nextState, _) <- ptryFrom @PMixerDatum $ inlineDatumFromOutput # ownOutput.datum
-  outputState <- pletFields @'["nullifierHashes"] nextState
+  outputState <- pletFields @'["nullifierHashes", "merkleTreeState"] nextState
   outputValue <- plet (ownOutput.value)
   -- Check protocol token:
-  conf <- pletFields @'["protocolToken", "poolNominal"] config
+  conf <- pletFields @'["protocolToken", "poolNominal", "merkleTreeConfig"] config
   PUnit <- pmatch $ containsOneProtocolToken # conf.protocolToken # outputValue
   let inputValue = pfield @"value" # ownInputResolved
-  inputState <- pletFields @'["nullifierHashes"] oldState
+  inputState <- pletFields @'["nullifierHashes", "merkleTreeState"] oldState
   -- Allowed transitions given a redeemer:
   pmatch redeemer \case
     PDeposit c -> popaque $ unTermCont do
       let commit = pfield @"commitment" # c
       validateDeposit conf inputState outputState inputValue outputValue commit
     _ -> ptraceError "Not implemented"
-
-validateDeposit ::
-  ( PMemberFields PMixerDatum '["nullifierHashes"] s datum
-  , PMemberFields PMixerConfig '["poolNominal"] s config
-  ) =>
-  HRec config ->
-  HRec datum ->
-  HRec datum ->
-  Term s SortedPositiveValue ->
-  Term s SortedPositiveValue ->
-  Term s PCommitment ->
-  TermCont s (Term s PUnit)
-validateDeposit conf inputState outputState inputValue outputValue commit = do
-  pguardC "Nullifier hash list modified" (inputState.nullifierHashes #== outputState.nullifierHashes)
-  let depositedAmount = (plovelaceValueOf # outputValue) - (plovelaceValueOf # inputValue)
-  pguardC "Nominal amount should be paid to script" (depositedAmount #== conf.poolNominal)
-  pure $ pconstant ()
 
 containsOneProtocolToken ::
   Term
