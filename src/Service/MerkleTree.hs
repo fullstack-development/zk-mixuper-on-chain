@@ -42,6 +42,31 @@ instance DerivePlutusType PMerkleTree where
 instance PTryFrom PData PMerkleTree
 instance PTryFrom PData (PAsData PMerkleTree)
 
+pmerkleEmpty :: Term s PMerkleTree
+pmerkleEmpty = pcon $ PMerkleEmpty pdnil
+
+pmerkleLeaf :: Term s PHash -> Term s PMerkleTree
+pmerkleLeaf leaf =
+  pcon $
+    PMerkleLeaf $
+      pdcons @"value" # pdata leaf # pdnil
+
+pmerkleNode ::
+  Term s PHash ->
+  Term s PMerkleTree ->
+  Term s PMerkleTree ->
+  Term s PMerkleTree
+pmerkleNode value l r =
+  pcon $
+    PMerkleNode $
+      pdcons @"value"
+        # pdata value
+          #$ pdcons @"leftSubtree"
+        # pdata l
+          #$ pdcons @"rightSubtree"
+        # pdata r
+          #$ pdnil
+
 newtype PMerkleTreeState (s :: S)
   = PMerkleTreeState (Term s (PDataRecord '["nextLeaf" := PNextInsertionCounter, "tree" := PMerkleTree]))
   deriving stock (Generic)
@@ -52,6 +77,17 @@ instance DerivePlutusType PMerkleTreeState where
 
 instance PTryFrom PData PMerkleTreeState
 instance PTryFrom PData (PAsData PMerkleTreeState)
+
+pmerkleTreeState :: Term s PNextInsertionCounter
+  -> Term s PMerkleTree -> Term s PMerkleTreeState
+pmerkleTreeState nextCounter tree =
+  pcon $
+    PMerkleTreeState $
+      pdcons @"nextLeaf"
+        # pdata nextCounter
+          #$ pdcons @"tree"
+        # pdata tree
+          #$ pdnil
 
 -- | Computes a SHA-256 hash of a given 'BuiltinByteString' message.
 phash :: Term s (PByteString :--> PHash)
@@ -146,3 +182,56 @@ psplitByPathMT = phoistAcyclic $
                 (pcon $ PPair node.rightSubtree (pcons # node.leftSubtree # acc))
                 (pcon $ PPair node.leftSubtree (pcons # node.rightSubtree # acc))
             _ -> pcon $ PPair t acc
+
+{- | Starting from inserted leaf compose new Merkle Tree from Merkle Path subtrees,
+ and rehash all path elements
+-}
+pcomposeByPathMT :: Term s (PHash :--> PMerkleTree :--> PPair PBool PMerkleTree :--> PMerkleTree)
+pcomposeByPathMT = phoistAcyclic $
+  plam $
+    \zeroLeaf tree pair -> P.do
+      msg <- plet $ pconstant "Not consistent Merkle Tree composition"
+      PPair p subtree <- pmatch pair
+      pmatch tree \case
+        PMerkleLeaf l -> P.do
+          leaf <- plet (pfield @"value" # l)
+          pmatch subtree \case
+            PMerkleEmpty _ -> P.do
+              -- tree inserted from left, empty subtree from right
+              let value = pcombineHash # leaf # zeroLeaf
+              pmerkleNode value tree pmerkleEmpty
+            PMerkleLeaf subl -> P.do
+              -- tree inserted from right, leaf subtree from left
+              subleaf <- plet (pfield @"value" # subl)
+              let value = pcombineHash # subleaf # leaf
+              pmerkleNode value subtree tree
+            _ -> ptraceError msg
+        PMerkleNode n -> P.do
+          node <- plet (pfield @"value" # n)
+          pmatch subtree \case
+            PMerkleNode subn -> P.do
+              subnode <- plet (pfield @"value" # subn)
+              pif
+                p
+                -- tree inserted from right, subtree from left
+                (pmerkleNode (pcombineHash # subnode # node) subtree tree)
+                -- tree inserted from left, subtree from right
+                (pmerkleNode (pcombineHash # node # subnode) tree subtree)
+            _ -> ptraceError msg
+        _ -> ptraceError msg
+
+{- | insert is done off-chain first, it returns new MerkleTree (it should be a part of contract state)
+ it is then checked on-chain: newMerkleTree == insert depositedCommitment oldMerkleTree
+-}
+pinsertMT :: Term s (PMerkleTreeConfig :--> PHash :--> PMerkleTreeState :--> PMerkleTreeState)
+pinsertMT = phoistAcyclic $
+  plam $
+    \config newLeaf is -> P.do
+      conf <- pletFields @'["zeroLeaf", "height"] config
+      inputState <- pletFields @'["nextLeaf", "tree"] is
+      path <- plet $ pcounterToPath # conf.height # inputState.nextLeaf
+      subtrees <- plet $ psplitByPathMT # path # inputState.tree
+      let subtreeAndPaths = pzip # (preverse # path) # subtrees
+      let outputTree = pfoldl # (pcomposeByPathMT # conf.zeroLeaf) # pmerkleLeaf newLeaf # subtreeAndPaths
+      let outputCounter = inputState.nextLeaf + 1
+      pmerkleTreeState outputCounter outputTree
