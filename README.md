@@ -19,11 +19,13 @@ nix develop
 Example in nix dev shell:
 
 ```sh
-cabal run dump-script -- -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d
+cabal run dump-script -- --help
+cabal run dump-script -- -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d -h 7
 ```
 
 Example if exe is build:
 
 ```sh
-result/bin/dump-script -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d
+result/bin/dump-script --help
+result/bin/dump-script -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d -h 7
 ```
