@@ -76,6 +76,7 @@ library
     Ext.Plutarch.Api.V2.Value
     Ext.Plutarch.Extra.Run
     Ext.Plutarch.List
+    Ext.Plutarch.Num
     Ext.PlutusTx.List
     Ext.PlutusTx.Numeric
     Mixer.Datum

@@ -2,8 +2,10 @@
 module Service.MerkleTree where
 
 import Ext.Plutarch.List (pdropI, preplicate)
+import Ext.Plutarch.Num (ppow)
 import Plutarch.DataRepr (HRec, PDataFields, PMemberFields)
 import Plutarch.Extra.List (preverse)
+import Plutarch.Extra.TermCont (pguardC, pletC)
 import qualified Plutarch.Monadic as P
 import Plutarch.Prelude
 
@@ -101,11 +103,11 @@ pnonEmptyLeafs =
 pcounterToPath :: Term s (PInteger :--> PNextInsertionCounter :--> PMerkleProofPath)
 pcounterToPath = phoistAcyclic $
   plam $
-    \h n -> P.do
-      zeroArr <- plet (preplicate # h # pconstant False)
-      -- TODO check
-      -- n > 2 ^ h = traceError "Merkle tree is full"
-      pif (n #== 0) zeroArr P.do
+    \h n -> unTermCont do
+      zeroArr <- pletC (preplicate # h # pconstant False)
+      leavesSetCardinality <- pletC (ppow @PInteger # 2 # h)
+      pguardC "Merkle tree is full" (n #<= leavesSetCardinality)
+      pure $ pif (n #== 0) zeroArr P.do
         let binaryN = preverse #$ pcounterToPathImpl # n
         let prefixZeros = pdropI # (plength # binaryN) # zeroArr
         pconcat # prefixZeros # binaryN
