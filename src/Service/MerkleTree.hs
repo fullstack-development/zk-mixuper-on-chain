@@ -6,6 +6,7 @@ import Ext.Plutarch.Num (ppow)
 import Plutarch.DataRepr (HRec, PDataFields, PMemberFields)
 import Plutarch.Extra.List (preverse)
 import Plutarch.Extra.TermCont (pguardC, pletC)
+import Plutarch.Internal.Quantification (PFix (..))
 import qualified Plutarch.Monadic as P
 import Plutarch.Prelude
 
@@ -28,6 +29,13 @@ instance DerivePlutusType PMerkleTreeConfig where
 
 instance PTryFrom PData PMerkleTreeConfig
 instance PTryFrom PData (PAsData PMerkleTreeConfig)
+
+data MerkleTreeF (r :: PType) (s :: S)
+  = MerkleEmptyF
+  | MerkleNodeF (PHash s) (r s) (r s)
+  | MerkleLeafF (PHash s)
+
+type PMerkleTreeF = PFix MerkleTreeF
 
 data PMerkleTree (s :: S)
   = PMerkleEmpty (Term s (PDataRecord '[]))
