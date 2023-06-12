@@ -1,9 +1,8 @@
 module Mixer.Script where
 
-import Ext.Plutarch.Api.V2.Contexts (inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
+import Ext.Plutarch.Api.V2.Contexts (filterInputsByToken, inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Ext.Plutarch.Api.V2.Value (SortedPositiveValue)
-import Mixer.Datum (PAssetClass, PCommitment, PMixerConfig, PMixerDatum (..), PMixerRedeemer (..))
-import Mixer.Script.Deposit (validateDeposit)
+import Mixer.Datum (PAssetClass, PWithdrawConfig, PWithdrawDatum (..), PWithdrawRedeemer (..))
 import Plutarch.Api.V1.Value (plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
@@ -25,24 +24,24 @@ mkValidator ::
 mkValidator config =
   validatorLogic # P.do
     pdat <- plet $ pconstant @PData config
-    (pconfig, _) <- ptryFrom @(PAsData PMixerConfig) pdat
+    (pconfig, _) <- ptryFrom @(PAsData PWithdrawConfig) pdat
     pconfig
 
 validatorLogic ::
   forall s.
   Term
     s
-    ( PAsData PMixerConfig
+    ( PAsData PWithdrawConfig
         :--> PData
         :--> PData
         :--> PScriptContext
         :--> POpaque
     )
 validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
-  (oldState, _) <- ptryFrom @PMixerDatum d
-  (redeemer, _) <- ptryFrom @PMixerRedeemer r
+  (oldState, _) <- ptryFrom @PWithdrawDatum d
+  (redeemer, _) <- ptryFrom @PWithdrawRedeemer r
   ctx <- pletFields @["txInfo", "purpose"] ctx'
-  info <- pletFields @'["inputs", "outputs"] $ ctx.txInfo
+  info <- pletFields @'["inputs", "outputs", "referenceInputs"] $ ctx.txInfo
   -- Find own input:
   PSpending i <- pmatch ctx.purpose
   let ownInputRef = pfield @"_0" # i
@@ -51,20 +50,34 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   -- Find own output:
   ownOutput <- pletFields @'["value", "datum"] $ pgetOnlyOneOutputFromList #$ pgetContinuingOutputs # info.outputs # ownInputResolved
   -- Get produced datum:
-  (nextState, _) <- ptryFrom @PMixerDatum $ inlineDatumFromOutput # ownOutput.datum
-  outputState <- pletFields @'["nullifierHashes", "merkleTreeState"] nextState
+  (nextState, _) <- ptryFrom @PWithdrawDatum $ inlineDatumFromOutput # ownOutput.datum
+  outputState <- pletFields @'["nullifierHashes"] nextState
   outputValue <- plet (ownOutput.value)
   -- Check protocol token:
-  conf <- pletFields @'["protocolToken", "poolNominal", "merkleTreeConfig"] config
+  conf <- pletFields @'["protocolToken", "poolNominal"] config
   PUnit <- pmatch $ containsOneProtocolToken # conf.protocolToken # outputValue
   let inputValue = pfield @"value" # ownInputResolved
-  inputState <- pletFields @'["nullifierHashes", "merkleTreeState"] oldState
-  -- Allowed transitions given a redeemer:
-  pmatch redeemer \case
-    PDeposit c -> popaque $ unTermCont do
-      let commit = pfield @"commitment" # c
-      validateDeposit conf inputState outputState inputValue outputValue commit
-    _ -> ptraceError "Not implemented"
+  inputState <- pletFields @'["nullifierHashes"] oldState
+  -- Get deposit tree reference input:
+  protocolToken <- pletFields @'["_0", "_1"] conf.protocolToken
+  let inp = pgetOnlyOneOutputFromList #$ filterInputsByToken # protocolToken._0 # protocolToken._1 # info.referenceInputs
+  -- Validate withdraw:
+  popaque $
+    unTermCont $
+      validateWithdraw conf inputState outputState inputValue outputValue
+
+validateWithdraw ::
+  ( PMemberFields PWithdrawDatum '["nullifierHashes"] s datum
+  , PMemberFields PWithdrawConfig '["poolNominal"] s config
+  ) =>
+  HRec config ->
+  HRec datum ->
+  HRec datum ->
+  Term s SortedPositiveValue ->
+  Term s SortedPositiveValue ->
+  TermCont s (Term s PUnit)
+validateWithdraw conf inputState outputState inputValue outputValue = do
+  pure $ pconstant ()
 
 containsOneProtocolToken ::
   Term

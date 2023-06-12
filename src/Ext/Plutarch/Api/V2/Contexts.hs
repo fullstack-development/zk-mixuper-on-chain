@@ -1,6 +1,8 @@
 module Ext.Plutarch.Api.V2.Contexts where
 
+import Plutarch.Api.V1.Value (pvalueOf)
 import Plutarch.Api.V2
+import qualified Plutarch.List as List
 import Plutarch.Prelude
 
 {- | Find the input being spent in the current transaction.
@@ -59,3 +61,15 @@ inlineDatumFromOutput = phoistAcyclic $
         pmatch (pfield @"outputDatum" # d) $ \case
           PDatum datum -> datum
       _ -> ptraceError "Output should contain inlinable datum"
+
+outputContainsToken :: Term s (PCurrencySymbol :--> PTokenName :--> PTxOut :--> PBool)
+outputContainsToken = phoistAcyclic $
+  plam $ \cs tn txOut ->
+    let inputValue = pfield @"value" # txOut
+     in pvalueOf # inputValue # cs # tn #== 1
+
+filterInputsByToken :: Term s (PCurrencySymbol :--> PTokenName :--> PBuiltinList PTxInInfo :--> PBuiltinList PTxOut)
+filterInputsByToken = phoistAcyclic $
+  plam $ \cs tn inputs ->
+    let resolvedInputs = List.pmap # plam (\txIn -> pfield @"resolved" # txIn) # inputs
+     in pfilter # (outputContainsToken # cs # tn) # resolvedInputs
