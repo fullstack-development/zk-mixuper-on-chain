@@ -73,3 +73,8 @@ filterInputsByToken = phoistAcyclic $
   plam $ \cs tn inputs ->
     let resolvedInputs = List.pmap # plam (\txIn -> pfield @"resolved" # txIn) # inputs
      in pfilter # (outputContainsToken # cs # tn) # resolvedInputs
+
+filterOutputsByToken :: Term s (PCurrencySymbol :--> PTokenName :--> PBuiltinList PTxOut :--> PBuiltinList PTxOut)
+filterOutputsByToken = phoistAcyclic $
+  plam $ \cs tn outs ->
+    pfilter # (outputContainsToken # cs # tn) # outs

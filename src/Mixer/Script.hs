@@ -1,9 +1,9 @@
 module Mixer.Script where
 
-import Ext.Plutarch.Api.V2.Contexts (filterInputsByToken, inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
+import Ext.Plutarch.Api.V2.Contexts (filterInputsByToken, filterOutputsByToken, inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Ext.Plutarch.Api.V2.Value (SortedPositiveValue)
-import Mixer.Datum (PAssetClass, PWithdrawConfig, PWithdrawDatum (..), PWithdrawRedeemer (..))
-import Plutarch.Api.V1.Value (plovelaceValueOf, pvalueOf)
+import Mixer.Datum (PMixerDatum (PDepositTree, PVault), PWithdrawConfig, PWithdrawDatum (..), PWithdrawRedeemer (..))
+import Plutarch.Api.V1.Value (PCurrencySymbol, PTokenName, plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
   PScriptContext,
@@ -52,19 +52,27 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   -- Get produced datum:
   (nextState, _) <- ptryFrom @PWithdrawDatum $ inlineDatumFromOutput # ownOutput.datum
   outputState <- pletFields @'["nullifierHashes"] nextState
-  outputValue <- plet (ownOutput.value)
   -- Check protocol token:
-  conf <- pletFields @'["protocolToken", "poolNominal"] config
-  PUnit <- pmatch $ containsOneProtocolToken # conf.protocolToken # outputValue
-  let inputValue = pfield @"value" # ownInputResolved
+  conf <- pletFields @'["protocolCurrency", "depositTreeTokenName", "vaultTokenName", "nullifierStoreTokenName", "poolNominal"] config
+  PUnit <- pmatch $ containsOneProtocolToken # conf.protocolCurrency # conf.nullifierStoreTokenName # ownOutput.value
   inputState <- pletFields @'["nullifierHashes"] oldState
   -- Get deposit tree reference input:
-  protocolToken <- pletFields @'["_0", "_1"] conf.protocolToken
-  let inp = pgetOnlyOneOutputFromList #$ filterInputsByToken # protocolToken._0 # protocolToken._1 # info.referenceInputs
+  let depositTreeInput = pgetOnlyOneOutputFromList #$ filterInputsByToken # conf.protocolCurrency # conf.depositTreeTokenName # info.referenceInputs
+  (mixerDatum, _) <- ptryFrom @PMixerDatum (inlineDatumFromOutput #$ pfield @"datum" # depositTreeInput)
+  PDepositTree depositTree <- pmatch mixerDatum
+  -- Check vault input and output:
+  vaultInput <-
+    pletFields @'["value", "datum"] $
+      pgetOnlyOneOutputFromList #$ filterInputsByToken # conf.protocolCurrency # conf.vaultTokenName # info.inputs
+  vaultOutput <-
+    pletFields @'["value", "datum"] $
+      pgetOnlyOneOutputFromList #$ filterOutputsByToken # conf.protocolCurrency # conf.vaultTokenName # info.outputs
+  (vaultDatum, _) <- ptryFrom @PMixerDatum (inlineDatumFromOutput # vaultOutput.datum)
+  PVault _ <- pmatch vaultDatum
   -- Validate withdraw:
   popaque $
     unTermCont $
-      validateWithdraw conf inputState outputState inputValue outputValue
+      validateWithdraw conf inputState outputState vaultInput.value vaultOutput.value
 
 validateWithdraw ::
   ( PMemberFields PWithdrawDatum '["nullifierHashes"] s datum
@@ -82,12 +90,12 @@ validateWithdraw conf inputState outputState inputValue outputValue = do
 containsOneProtocolToken ::
   Term
     s
-    ( PAssetClass
+    ( PCurrencySymbol
+        :--> PTokenName
         :--> SortedPositiveValue
         :--> PUnit
     )
 containsOneProtocolToken = phoistAcyclic $
-  plam $ \assetClass val -> unTermCont do
-    protocolToken <- pletFieldsC @'["_0", "_1"] assetClass
-    pguardC "Output should contain one protocol token" $ (pvalueOf # val # protocolToken._0 # protocolToken._1) #== 1
+  plam $ \cur tn val -> unTermCont do
+    pguardC "Output should contain one protocol token" $ (pvalueOf # val # cur # tn) #== 1
     pure $ pconstant ()

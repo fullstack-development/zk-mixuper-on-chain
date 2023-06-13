@@ -1,6 +1,6 @@
 module Mixer.Datum where
 
-import Plutarch.Api.V2 (PCurrencySymbol, PTokenName, PTuple)
+import Plutarch.Api.V2 (PCurrencySymbol, PMaybeData, PTokenName, PTuple)
 import Plutarch.DataRepr (PDataFields)
 import Plutarch.Prelude
 
@@ -9,8 +9,11 @@ type PHash = PByteString
 
 type PLovelace = PInteger
 
+-- | Just merkle tree root for now
+type PPublicInput = PInteger
+
 newtype PWithdrawRedeemer (s :: S)
-  = PWithdraw (Term s (PDataRecord '[]))
+  = PWithdraw (Term s (PDataRecord '["publicInput" := PPublicInput]))
   -- TODO(?) Close redeemer for pool operator / creator (fixed pkh)
   -- Close (Term s (PDataRecord '[]))
   deriving stock (Generic)
@@ -22,11 +25,8 @@ instance DerivePlutusType PWithdrawRedeemer where
 instance PTryFrom PData PWithdrawRedeemer
 instance PTryFrom PData (PAsData PWithdrawRedeemer)
 
--- | An asset class, identified by a CurrencySymbol and a TokenName. PAssetClass :: PType
-type PAssetClass = PTuple PCurrencySymbol PTokenName
-
 newtype PWithdrawConfig (s :: S)
-  = PWithdrawConfig (Term s (PDataRecord '["protocolToken" := PAssetClass, "poolNominal" := PLovelace]))
+  = PWithdrawConfig (Term s (PDataRecord '["protocolCurrency" := PCurrencySymbol, "depositTreeTokenName" := PTokenName, "vaultTokenName" := PTokenName, "nullifierStoreTokenName" := PTokenName, "poolNominal" := PLovelace]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData)
 
@@ -48,12 +48,24 @@ instance PTryFrom PData PWithdrawDatum
 instance PTryFrom PData (PAsData PWithdrawDatum)
 
 newtype PDepositDatum (s :: S)
-  = PDepositDatum (Term s (PDataRecord '["merkleTreeState" := PData, "merkleTreeRoot" := PInteger]))
+  = PDepositDatum (Term s (PDataRecord '["merkleTreeState" := PData, "merkleTreeRoot" := PMaybeData (PAsData PInteger)]))
   deriving stock (Generic)
-  deriving anyclass (PlutusType, PDataFields, PIsData, PEq)
+  deriving anyclass (PlutusType, PDataFields, PIsData)
 
 instance DerivePlutusType PDepositDatum where
   type DPTStrat _ = PlutusTypeData
 
 instance PTryFrom PData PDepositDatum
 instance PTryFrom PData (PAsData PDepositDatum)
+
+data PMixerDatum (s :: S)
+  = PDepositTree (Term s (PDataRecord '["depositTree" := PDepositDatum]))
+  | PVault (Term s (PDataRecord '[]))
+  deriving stock (Generic)
+  deriving anyclass (PlutusType, PIsData)
+
+instance DerivePlutusType PMixerDatum where
+  type DPTStrat _ = PlutusTypeData
+
+instance PTryFrom PData PMixerDatum
+instance PTryFrom PData (PAsData PMixerDatum)
