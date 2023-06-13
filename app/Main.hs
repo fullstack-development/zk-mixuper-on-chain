@@ -23,26 +23,21 @@ import Plutarch.Script (serialiseScript)
 import PlutusLedgerApi.V1.Bytes (LedgerBytes (..), fromHex)
 import PlutusLedgerApi.V1.Value (CurrencySymbol (CurrencySymbol), TokenName, assetClass)
 import PlutusLedgerApi.V2 (toData)
-import Ply.Plutarch ( writeTypedScript )
+import Ply.Plutarch (writeTypedScript)
 import System.IO (IOMode (WriteMode), withFile)
-import Service.MerkleTree.Plutus (MerkleTreeConfig(..), zeroRoot)
 
 main :: IO ()
 main = do
   MixerOpts {..} <- execParser mixerOpts
-  let ledgerTokenName :: TokenName = fromString tokenName
   ledgerCurrSymbol :: CurrencySymbol <- either throw (pure . CurrencySymbol . getLedgerBytes) $ fromHex currencySymbol
-  zeroLeaf <- either throw (pure . getLedgerBytes) $ fromHex merkleTreeZeroLeaf
   let config =
         toData
           MixerConfig
-            { protocolToken = assetClass ledgerCurrSymbol ledgerTokenName
+            { protocolCurrency = ledgerCurrSymbol
+            , depositTreeTokenName = fromString depositTreeTokenName
+            , vaultTokenName = fromString vaultTokenName
+            , nullifierStoreTokenName = fromString nullifierStoreTokenName
             , poolNominal = poolNominal
-            , merkleTreeConfig = MerkleTreeConfig
-                { mtcZeroRoot = zeroRoot merkleTreeHeight zeroLeaf
-                , mtcZeroLeaf = zeroLeaf
-                , mtcHeight = merkleTreeHeight
-                }
             }
   let (script, budget, log) = either (error . T.unpack) id $ evalT (mkValidator config)
   putStrLn $ "Script budget: " <> show budget
