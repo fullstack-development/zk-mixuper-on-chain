@@ -6,14 +6,17 @@ import Mixer.Datum (PMixerDatum (PDepositTree, PVault), PWithdrawConfig, PWithdr
 import Plutarch.Api.V1.Value (PCurrencySymbol, PTokenName, plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
+  PMaybeData (..),
   PScriptContext,
   PScriptPurpose (PSpending),
   PTxInfo,
   PTxOut,
   PValidator,
  )
+import Plutarch.Builtin (pasInt, pforgetData)
 import Plutarch.DataRepr (HRec, HRecOf, PMemberFields)
-import Plutarch.Extra.TermCont (pguardC, pletFieldsC)
+import Plutarch.Extra.Maybe (pfromDJust)
+import Plutarch.Extra.TermCont (pguardC, pletFieldsC, pmatchC, ptryFromC)
 import qualified Plutarch.Monadic as P
 import Plutarch.Prelude
 import PlutusCore.Data (Data)
@@ -60,31 +63,44 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   let depositTreeInput = pgetOnlyOneOutputFromList #$ filterInputsByToken # conf.protocolCurrency # conf.depositTreeTokenName # info.referenceInputs
   (mixerDatum, _) <- ptryFrom @PMixerDatum (inlineDatumFromOutput #$ pfield @"datum" # depositTreeInput)
   PDepositTree depositTree <- pmatch mixerDatum
+  let treeRoot = pfield @"merkleTreeRoot" #$ pfield @"depositTree" # depositTree
   -- Check vault input and output:
-  vaultInput <-
-    pletFields @'["value", "datum"] $
-      pgetOnlyOneOutputFromList #$ filterInputsByToken # conf.protocolCurrency # conf.vaultTokenName # info.inputs
+  inputValue <-
+    plet $
+      pfield @"value"
+        #$ pgetOnlyOneOutputFromList
+        #$ filterInputsByToken
+        # conf.protocolCurrency
+        # conf.vaultTokenName
+        # info.inputs
   vaultOutput <-
     pletFields @'["value", "datum"] $
       pgetOnlyOneOutputFromList #$ filterOutputsByToken # conf.protocolCurrency # conf.vaultTokenName # info.outputs
   (vaultDatum, _) <- ptryFrom @PMixerDatum (inlineDatumFromOutput # vaultOutput.datum)
   PVault _ <- pmatch vaultDatum
   -- Validate withdraw:
+  rdm <- pletFields @'["publicInput"] redeemer
   popaque $
     unTermCont $
-      validateWithdraw conf inputState outputState vaultInput.value vaultOutput.value
+      validateWithdraw conf inputState outputState inputValue vaultOutput.value treeRoot rdm
 
 validateWithdraw ::
   ( PMemberFields PWithdrawDatum '["nullifierHashes"] s datum
   , PMemberFields PWithdrawConfig '["poolNominal"] s config
+  , PMemberFields PWithdrawRedeemer '["publicInput"] s redeemer
   ) =>
   HRec config ->
   HRec datum ->
   HRec datum ->
   Term s SortedPositiveValue ->
   Term s SortedPositiveValue ->
+  Term s (PMaybeData (PAsData PInteger)) ->
+  HRec redeemer ->
   TermCont s (Term s PUnit)
-validateWithdraw conf inputState outputState inputValue outputValue = do
+validateWithdraw conf inputState outputState inputValue outputValue currentRoot redeemer = do
+  PDJust root <- pmatchC currentRoot
+  let r = pforgetData $ pfield @"_0" # root
+  pguardC "Merkle root is not current" $ (pasInt # r) #== redeemer.publicInput
   pure $ pconstant ()
 
 containsOneProtocolToken ::
