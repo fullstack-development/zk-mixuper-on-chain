@@ -20,12 +20,12 @@ Example in nix dev shell:
 
 ```sh
 cabal run dump-script -- --help
-cabal run dump-script -- -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d
+cabal run dump-script -- -s 75a07ecddfcd14b0b5ac5b3ca3d03ee8337145166bc522a5ec1529c0
 ```
 
 Example if exe is build:
 
 ```sh
 result/bin/dump-script --help
-result/bin/dump-script -s bbd65a4af3dd5bb07b11cfb66418cdffc6bd26817559e0c5a80f405d
+result/bin/dump-script -s 75a07ecddfcd14b0b5ac5b3ca3d03ee8337145166bc522a5ec1529c0
 ```
