@@ -77,6 +77,7 @@ library
     Ext.Plutarch.Extra.Run
     Ext.Plutarch.List
     Ext.Plutarch.Num
+    Ext.Plutarch.Rational
     Ext.PlutusTx.Builtins
     Ext.PlutusTx.List
     Ext.PlutusTx.Monad
@@ -85,6 +86,7 @@ library
     Mixer.Datum.Plutus
     Mixer.Script
     Plutarch.Pairing.BN128
+    Plutarch.Pairing.Group.Fq
     Plutus.Pairing.BN128
     Plutus.Pairing.Group
     Plutus.Pairing.Group.Fq

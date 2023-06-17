@@ -15,7 +15,6 @@ import PlutusTx.Prelude
  Note that x or y may be negative.
  Can be used to compute inverse as if gcd(a,b) == 1 then ax == 1 mod b
 -}
-{-# INLINEABLE gcdExt #-}
 gcdExt :: Integer -> Integer -> (Integer, Integer, Integer)
 gcdExt a b
   | b == 0 = (1, 0, a)
@@ -23,8 +22,7 @@ gcdExt a b
       let (q, r) = a `quotRem` b
           (s, t, g) = gcdExt b r
        in (t, s - q * t, g)
-
-{-# INLINEABLE byte2Bits #-}
+{-# INLINEABLE gcdExt #-}
 
 -- | Convert byte sized integer to bits
 byte2Bits :: Integer -> [Bool]
@@ -41,8 +39,7 @@ byte2Bits n
            in if m == 0
                 then False : go d
                 else True : go d
-
-{-# INLINEABLE bits2Num #-}
+{-# INLINEABLE byte2Bits #-}
 
 {- | Convert bits to number
  uses little-endian system (stores the least-significant bit at the smallest address)
@@ -52,14 +49,12 @@ bits2Num = fst . foldl add (0, 1)
   where
     add (num, powOf2) bit = (toI bit * powOf2 + num, 2 * powOf2)
     toI b = if b then 1 else 0
-
-{-# INLINEABLE bytes2Num #-}
+{-# INLINEABLE bits2Num #-}
 
 -- | Convert bytes to number
 bytes2Num :: [Integer] -> Integer
 bytes2Num = bits2Num . foldMap byte2Bits
-
-{-# INLINEABLE byteString2Integer #-}
+{-# INLINEABLE bytes2Num #-}
 
 -- | Convert ByteString of arbitrary size to integer
 byteString2Integer :: Integer -> BuiltinByteString -> Integer
@@ -68,3 +63,4 @@ byteString2Integer size bs = bytes2Num $ indexByteString bs <$> indexFrom 0
     indexFrom i
       | i == size = []
       | otherwise = i : indexFrom (succ i)
+{-# INLINEABLE byteString2Integer #-}

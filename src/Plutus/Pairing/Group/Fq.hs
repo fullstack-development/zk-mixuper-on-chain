@@ -97,16 +97,14 @@ fqSub (Fq a) (Fq b) = Fq $ (a - b) `modulo` _q
 fqMul :: Fq -> Fq -> Fq
 fqMul (Fq a) (Fq b) = Fq $ (a * b) `modulo` _q
 
-{-# INLINEABLE fqInv #-}
-
 -- | Multiplicative inverse
 fqInv :: Fq -> Fq
 fqInv (Fq a) =
   let (i, _, _) = gcdExt a _q
    in Fq $ i `modulo` _q
-
-{-# INLINEABLE fqNqr #-}
+{-# INLINEABLE fqInv #-}
 
 -- | Quadratic non-residue
 fqNqr :: Fq
 fqNqr = Fq _nqr
+{-# INLINEABLE fqNqr #-}
