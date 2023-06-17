@@ -77,11 +77,21 @@ library
     Ext.Plutarch.Extra.Run
     Ext.Plutarch.List
     Ext.Plutarch.Num
+    Ext.PlutusTx.Builtins
     Ext.PlutusTx.List
+    Ext.PlutusTx.Monad
     Ext.PlutusTx.Numeric
     Mixer.Datum
     Mixer.Datum.Plutus
     Mixer.Script
+    Plutus.Pairing.BN128
+    Plutus.Pairing.Group
+    Plutus.Pairing.Group.Fq
+    Plutus.Pairing.Group.Fq12
+    Plutus.Pairing.Group.Fq2
+    Plutus.Pairing.Group.Fq6
+    Plutus.Pairing.Group.Point
+    Plutus.Pairing.MillerAlgorithm
 
   hs-source-dirs:  src
   build-depends:

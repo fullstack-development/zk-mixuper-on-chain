@@ -23,3 +23,6 @@ x0 ^ y0
       | even y = g (x * x) (y `quotient` 2) z
       | y == 1 = x * z
       | otherwise = g (x * x) (y `quotient` 2) (x * z)
+
+class Numeric a where
+  mkFromInteger :: Integer -> a
