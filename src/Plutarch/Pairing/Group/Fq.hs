@@ -23,6 +23,7 @@ instance PNum PFq where
   (#+) = pfqAdd
   (#-) = pfqSub
   (#*) = pfqMul
+  pabs = phoistAcyclic $ plam id
   pnegate = phoistAcyclic $ plam (0 #-)
   psignum = plam \x ->
     pif

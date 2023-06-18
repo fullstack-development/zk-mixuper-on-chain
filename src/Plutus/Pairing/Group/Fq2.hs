@@ -99,8 +99,6 @@ fq2Mul (Fq2 a0 a1) (Fq2 b0 b1) = Fq2 c0 c1
     c0 = bb * fqNqr + aa
     c1 = (a0 + a1) * (b0 + b1) - aa - bb
 
-{-# INLINEABLE fq2Inv #-}
-
 -- | Multiplicative inverse
 fq2Inv :: Fq2 -> Fq2
 fq2Inv (Fq2 a0 a1) = Fq2 c0 c1
@@ -108,14 +106,12 @@ fq2Inv (Fq2 a0 a1) = Fq2 c0 c1
     t = fqInv ((a0 ^ 2) - ((a1 ^ 2) * fqNqr))
     c0 = a0 * t
     c1 = negate (a1 * t)
-
-{-# INLINEABLE fq2Conj #-}
+{-# INLINEABLE fq2Inv #-}
 
 -- | Conjugation
 fq2Conj :: Fq2 -> Fq2
 fq2Conj (Fq2 x y) = Fq2 x (negate y)
-
-{-# INLINEABLE xi #-}
+{-# INLINEABLE fq2Conj #-}
 
 -- | Cubic non-residue in @Fq2@
 xi :: Fq2
@@ -124,15 +120,14 @@ xi = Fq2 xiA xiB
     xiA, xiB :: Fq
     xiA = Fq.mkFq _xiA
     xiB = Fq.mkFq _xiB
-
-{-# INLINEABLE mulXiFq2 #-}
+{-# INLINEABLE xi #-}
 
 -- | Multiply by @xi@
 mulXiFq2 :: Fq2 -> Fq2
 mulXiFq2 = (* xi)
-
-{-# INLINEABLE fq2scalarMul #-}
+{-# INLINEABLE mulXiFq2 #-}
 
 -- | Multiplication by a scalar in @Fq@
 fq2scalarMul :: Fq -> Fq2 -> Fq2
 fq2scalarMul a (Fq2 x y) = Fq2 (a * x) (a * y)
+{-# INLINEABLE fq2scalarMul #-}
