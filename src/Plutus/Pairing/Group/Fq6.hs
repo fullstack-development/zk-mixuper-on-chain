@@ -93,29 +93,28 @@ fq6Sub (Fq6 x y z) (Fq6 a b c) = Fq6 (x - a) (y - b) (z - c)
 
 {-# INLINEABLE fq6Mul #-}
 fq6Mul :: Fq6 -> Fq6 -> Fq6
-fq6Mul (Fq6 a0 a1 a2) (Fq6 b0 b1 b2) = Fq6 c0 c1 c2
+fq6Mul (Fq6 ax ay az) (Fq6 bx by bz) = Fq6 cx cy cz
   where
-    t0 = a0 * b0
-    t1 = a1 * b1
-    t2 = a2 * b2
-    c0 = Fq2.mulXiFq2 ((a1 + a2) * (b1 + b2) - t1 - t2) + t0
-    c1 = ((a0 + a1) * (b0 + b1)) - t0 - t1 + Fq2.mulXiFq2 t2
-    c2 = ((a0 + a2) * (b0 + b2)) - t0 + t1 - t2
-
-{-# INLINEABLE fq6Inv #-}
+    xx = ax * bx
+    yy = ay * by
+    zz = az * bz
+    cx = Fq2.mulXiFq2 ((ay + az) * (by + bz) - yy - zz) + xx
+    cy = ((ax + ay) * (bx + by)) - xx - yy + Fq2.mulXiFq2 zz
+    cz = ((ax + az) * (bx + bz)) - xx + yy - zz
 
 -- | Multiplicative inverse
 fq6Inv :: Fq6 -> Fq6
-fq6Inv (Fq6 a b c) = Fq6 (t * c0) (t * c1) (t * c2)
+fq6Inv (Fq6 ax ay az) = Fq6 (t * c0) (t * c1) (t * c2)
   where
-    c0 = a ^ 2 - b * c * Fq2.xi
-    c1 = c ^ 2 * Fq2.xi - a * b
-    c2 = b ^ 2 - a * c
-    t = Fq2.fq2Inv ((c * c1 + b * c2) * Fq2.xi + a * c0)
+    c0 = ax ^ 2 - ay * az * Fq2.xi
+    c1 = az ^ 2 * Fq2.xi - ax * ay
+    c2 = ay ^ 2 - ax * az
+    t = Fq2.fq2Inv ((az * c1 + ay * c2) * Fq2.xi + ax * c0)
+{-# INLINEABLE fq6Inv #-}
 
 {- | Multiply by @xi@ (cubic nonresidue in @Fq2@) and reorder
  coefficients
 -}
-{-# INLINEABLE mulXiFq6 #-}
 mulXiFq6 :: Fq6 -> Fq6
 mulXiFq6 (Fq6 x y z) = Fq6 (z * Fq2.xi) x y
+{-# INLINEABLE mulXiFq6 #-}

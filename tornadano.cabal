@@ -88,6 +88,7 @@ library
     Plutarch.Pairing.BN128
     Plutarch.Pairing.Group.Fq
     Plutarch.Pairing.Group.Fq2
+    Plutarch.Pairing.Group.Fq6
     Plutus.Pairing.BN128
     Plutus.Pairing.Group
     Plutus.Pairing.Group.Fq
