@@ -3,9 +3,14 @@ module Plutarch.Pairing.Group.Fq6 where
 import Plutarch.DataRepr (PDataFields)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
-import Plutarch.Pairing.Group.Fq2
+import Plutarch.Pairing.Group.Fq2 (
+  PFq2,
+  pfq2Inv,
+  pmkFq2,
+  pmulXiFq2,
+  pxi,
+ )
 import Plutarch.Prelude
-import qualified Plutus.Pairing.BN128 as Plutus
 
 newtype PFq6 (s :: S)
   = PFq6 (Term s (PDataRecord '["x" := PFq2, "y" := PFq2, "z" := PFq2]))

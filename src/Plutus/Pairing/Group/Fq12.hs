@@ -40,8 +40,6 @@ instance Eq Fq12 where
   {-# INLINEABLE (==) #-}
   (Fq12 x y) == (Fq12 a b) = x == a && y == b
 
-{-# INLINEABLE mkFq12 #-}
-
 {- | Create a new value in @Fq12@ by providing a list of twelve
  coefficients in @Fq@, should be used instead of the @Fq12@
  constructor.
@@ -52,6 +50,7 @@ mkFq12 [a, b, c, d, e, f, g, h, i, j, k, l] =
     (Fq6.mkFq6 (Fq2.mkFq2 a b) (Fq2.mkFq2 c d) (Fq2.mkFq2 e f))
     (Fq6.mkFq6 (Fq2.mkFq2 g h) (Fq2.mkFq2 i j) (Fq2.mkFq2 k l))
 mkFq12 _ = traceError "Invalid arguments to fq12"
+{-# INLINEABLE mkFq12 #-}
 
 {-# INLINEABLE fq12int #-}
 fq12int :: Integer -> Fq12
@@ -103,27 +102,24 @@ fq12Sub (Fq12 x y) (Fq12 a b) = Fq12 (x - a) (y - b)
 
 {-# INLINEABLE fq12Mul #-}
 fq12Mul :: Fq12 -> Fq12 -> Fq12
-fq12Mul (Fq12 x y) (Fq12 a b) = Fq12 (Fq6.mulXiFq6 bb + aa) ((x + y) * (a + b) - aa - bb)
+fq12Mul (Fq12 ax ay) (Fq12 bx by) = Fq12 (Fq6.mulXiFq6 yy + xx) ((ax + ay) * (bx + by) - xx - yy)
   where
-    aa = x * a
-    bb = y * b
-
-{-# INLINEABLE fq12Inv #-}
+    xx = ax * bx
+    yy = ay * by
 
 -- | Multiplicative inverse
 fq12Inv :: Fq12 -> Fq12
-fq12Inv (Fq12 a b) = Fq12 (a * t) (negate (b * t))
+fq12Inv (Fq12 x y) = Fq12 (x * t) (negate (y * t))
   where
-    t = Fq6.fq6Inv (a ^ 2 - Fq6.mulXiFq6 (b ^ 2))
-
-{-# INLINEABLE fq12Conj #-}
+    t = Fq6.fq6Inv (x ^ 2 - Fq6.mulXiFq6 (y ^ 2))
+{-# INLINEABLE fq12Inv #-}
 
 -- | Conjugation
 fq12Conj :: Fq12 -> Fq12
 fq12Conj (Fq12 x y) = Fq12 x (negate y)
+{-# INLINEABLE fq12Conj #-}
 
 -- | Iterated Frobenius automorphism
-{-# INLINEABLE fq12frobenius #-}
 fq12frobenius :: Integer -> Fq12 -> Fq12
 fq12frobenius i a
   | i == 0 = a
@@ -132,25 +128,26 @@ fq12frobenius i a
       let prev = fq12frobenius (i - 1) a
        in fastFrobenius1 prev
   | otherwise = traceError "fq12frobenius not defined for negative values of i"
+{-# INLINEABLE fq12frobenius #-}
 
 {-# INLINEABLE fastFrobenius1 #-}
 fastFrobenius1 :: Fq12 -> Fq12
-fastFrobenius1 (Fq12 (Fq6.Fq6 x0 x1 x2) (Fq6.Fq6 y0 y1 y2)) =
+fastFrobenius1 (Fq12 (Fq6.Fq6 ax ay az) (Fq6.Fq6 bx by bz)) =
   let
-    t1 = Fq2.fq2Conj x0
-    t2 = Fq2.fq2Conj y0
-    t3 = Fq2.fq2Conj x1
-    t4 = Fq2.fq2Conj y1
-    t5 = Fq2.fq2Conj x2
-    t6 = Fq2.fq2Conj y2
+    cax = Fq2.fq2Conj ax
+    cbx = Fq2.fq2Conj bx
+    cay = Fq2.fq2Conj ay
+    cby = Fq2.fq2Conj by
+    caz = Fq2.fq2Conj az
+    cbz = Fq2.fq2Conj bz
     gamma1 :: Integer -> Fq2.Fq2
     gamma1 i = Fq2.xi ^ ((i * (_q - 1)) `divide` 6)
-    t11 = t1
-    t21 = t2 * gamma1 1
-    t31 = t3 * gamma1 2
-    t41 = t4 * gamma1 3
-    t51 = t5 * gamma1 4
-    t61 = t6 * gamma1 5
+    t11 = cax
+    t21 = cbx * gamma1 1
+    t31 = cay * gamma1 2
+    t41 = cby * gamma1 3
+    t51 = caz * gamma1 4
+    t61 = cbz * gamma1 5
     c0 = Fq6 t11 t31 t51
     c1 = Fq6 t21 t41 t61
    in
