@@ -6,6 +6,8 @@ import Plutarch.Num (PNum (..))
 import Plutarch.Pairing.Group.Fq (PFq (..), pfqInv, pfqNqr, pmkFq)
 import Plutarch.Prelude
 import qualified Plutus.Pairing.BN128 as Plutus
+import qualified PlutusTx.Monoid as PlutusTx
+import qualified PlutusTx.Prelude as PlutusTx
 
 newtype PFq2 (s :: S)
   = PFq2 (Term s (PDataRecord '["x" := PFq, "y" := PFq]))
@@ -98,3 +100,12 @@ pfq2scalarMul a bt = P.do
 -- | Multiply by @xi@
 pmulXiFq2 :: Term s (PFq2 :--> PFq2)
 pmulXiFq2 = phoistAcyclic $ plam (#* pxi)
+
+instance PlutusTx.Semigroup (Term s PFq2) where
+  (<>) = pfq2Mul
+
+instance PlutusTx.Monoid (Term s PFq2) where
+  mempty = 1
+
+instance PlutusTx.Group (Term s PFq2) where
+  inv = pfq2Inv

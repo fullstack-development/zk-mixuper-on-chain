@@ -11,6 +11,8 @@ import Plutarch.Pairing.Group.Fq2 (
   pxi,
  )
 import Plutarch.Prelude
+import qualified PlutusTx.Monoid as PlutusTx
+import qualified PlutusTx.Prelude as PlutusTx
 
 newtype PFq6 (s :: S)
   = PFq6 (Term s (PDataRecord '["x" := PFq2, "y" := PFq2, "z" := PFq2]))
@@ -104,3 +106,12 @@ pmulXiFq6 :: Term s (PFq6 :--> PFq6)
 pmulXiFq6 = phoistAcyclic $ plam \at -> P.do
   a <- pletFields @'["x", "y", "z"] at
   pFq6 (a.z * pxi) a.x a.y
+
+instance PlutusTx.Semigroup (Term s PFq6) where
+  (<>) = pfq6Mul
+
+instance PlutusTx.Monoid (Term s PFq6) where
+  mempty = 1
+
+instance PlutusTx.Group (Term s PFq6) where
+  inv = pfq6Inv

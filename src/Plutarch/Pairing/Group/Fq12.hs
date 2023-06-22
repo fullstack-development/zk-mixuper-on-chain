@@ -13,6 +13,8 @@ import Plutarch.Pairing.Group.Fq6 (
   pmulXiFq6,
  )
 import Plutarch.Prelude
+import qualified PlutusTx.Monoid as PlutusTx
+import qualified PlutusTx.Prelude as PlutusTx
 
 -- TODO
 -- class PNormilize
@@ -128,3 +130,12 @@ ppowUnitary x n =
     (n #< 0)
     (ppow # pfq12Conj x # negate n)
     (ppow # x # n)
+
+instance PlutusTx.Semigroup (Term s PFq12) where
+  (<>) = pfq12Mul
+
+instance PlutusTx.Monoid (Term s PFq12) where
+  mempty = 1
+
+instance PlutusTx.Group (Term s PFq12) where
+  inv = pfq12Inv

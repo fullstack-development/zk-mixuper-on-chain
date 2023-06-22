@@ -6,6 +6,7 @@ import Plutarch.Num (PNum (..))
 import Plutarch.Pairing.BN128 (_nqr, _q)
 import Plutarch.Prelude
 import qualified Plutus.Pairing.BN128 as Plutus
+import qualified PlutusTx.Monoid as PlutusTx
 import qualified PlutusTx.Prelude as PlutusTx
 
 newtype PFq (s :: S)
@@ -66,3 +67,12 @@ pfqInv t = P.do
 -- | Quadratic non-residue
 pfqNqr :: Term s PFq
 pfqNqr = pfq _nqr
+
+instance PlutusTx.Semigroup (Term s PFq) where
+  (<>) = pfqMul
+
+instance PlutusTx.Monoid (Term s PFq) where
+  mempty = 1
+
+instance PlutusTx.Group (Term s PFq) where
+  inv = pfqInv
