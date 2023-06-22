@@ -44,13 +44,13 @@ PlutusTx.makeIsDataIndexed
 gAdd :: (Eq t, AdditiveGroup t, MultiplicativeSemigroup t, Group t) => Point t -> Point t -> Point t
 gAdd p Infinity = p
 gAdd Infinity q = q
-gAdd (Point x1 y1) (Point x2 y2)
-  | x1 == x2 = Infinity
-  | otherwise = Point x3 y3
+gAdd (Point px py) (Point qx qy)
+  | px == qx = Infinity
+  | otherwise = Point x y
   where
-    l = (y1 - y2) * inv (x1 - x2)
-    x3 = l * l - x1 - x2
-    y3 = l * (x1 - x3) - y1
+    l = (py - qy) * inv (px - qx)
+    x = l * l - px - qx
+    y = l * (px - x) - py
 
 {-# INLINEABLE gDouble #-}
 gDouble :: (Eq t, AdditiveGroup t, MultiplicativeSemigroup t, Group t) => Point t -> Point t

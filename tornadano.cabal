@@ -90,6 +90,7 @@ library
     Plutarch.Pairing.Group.Fq12
     Plutarch.Pairing.Group.Fq2
     Plutarch.Pairing.Group.Fq6
+    Plutarch.Pairing.Group.Point
     Plutus.Pairing.BN128
     Plutus.Pairing.Group
     Plutus.Pairing.Group.Fq
