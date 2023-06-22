@@ -30,8 +30,6 @@ type G2 = Point Fq2
 -}
 type GT = Fq12
 
-{-# INLINEABLE isOnCurve #-}
-
 -- | Test whether a value satisfies the corresponding curve equation
 isOnCurve ::
   (Eq a, AdditiveSemigroup a, MultiplicativeMonoid a, Numeric a) =>
@@ -41,6 +39,7 @@ isOnCurve Infinity =
   True
 isOnCurve (Point x y) =
   y ^ 2 == x ^ 3 + mkFromInteger _b
+{-# INLINEABLE isOnCurve #-}
 
 {- | Iterated frobenius morphisms on fields of characteristic _q,
  implemented naively

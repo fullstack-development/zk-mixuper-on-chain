@@ -86,6 +86,7 @@ library
     Mixer.Datum.Plutus
     Mixer.Script
     Plutarch.Pairing.BN128
+    Plutarch.Pairing.Group
     Plutarch.Pairing.Group.Fq
     Plutarch.Pairing.Group.Fq12
     Plutarch.Pairing.Group.Fq2
