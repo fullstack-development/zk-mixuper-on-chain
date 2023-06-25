@@ -85,6 +85,7 @@ library
     Mixer.Datum
     Mixer.Datum.Plutus
     Mixer.Script
+    Plutarch.Pairing
     Plutarch.Pairing.BN128
     Plutarch.Pairing.Group
     Plutarch.Pairing.Group.Fq
@@ -93,6 +94,7 @@ library
     Plutarch.Pairing.Group.Fq6
     Plutarch.Pairing.Group.Point
     Plutarch.Pairing.MillerAlgorithm
+    Plutus.Pairing
     Plutus.Pairing.BN128
     Plutus.Pairing.Group
     Plutus.Pairing.Group.Fq
@@ -101,6 +103,8 @@ library
     Plutus.Pairing.Group.Fq6
     Plutus.Pairing.Group.Point
     Plutus.Pairing.MillerAlgorithm
+    Plutus.ZK.Types
+    Plutus.ZK.Validation
 
   hs-source-dirs:  src
   build-depends:
