@@ -6,8 +6,7 @@
 
 module Ext.PlutusTx.Monad where
 
-{-# INLINEABLE join #-}
-
 -- | Monadic join specialized for ((->) r)
 join :: (a -> a -> b) -> a -> b
 join op r = r `op` r
+{-# INLINEABLE join #-}

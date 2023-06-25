@@ -123,18 +123,18 @@ lineFunction ::
   G2 ->
   -- | Points @T + Q@ and @Line(T, Q, P)@.
   (G2, GT)
-lineFunction (Point x y) (Point x1 y1) (Point x2 y2)
-  | x1 /= x2 = (Point x3 y3, Fq12 (Fq6 (Fq2 (zero - y) zero) zero zero) (Fq6 (Fq2 x zero * l) (y1 - l * x1) zero))
-  | y1 + y2 == zero = (Infinity, Fq12 (Fq6 (Fq2 x zero) zero zero) (Fq6 (zero - x1) zero zero))
-  | otherwise = (Point x3' y3', Fq12 (Fq6 (Fq2 (zero - y) zero) zero zero) (Fq6 (Fq2 x zero * l') (y1 - l' * x1) zero))
+lineFunction (Point px py) (Point tx ty) (Point qx qy)
+  | tx /= qx = (Point x1 y1, Fq12 (Fq6 (Fq2 (zero - py) zero) zero zero) (Fq6 (Fq2 px zero * l) (ty - l * tx) zero))
+  | ty + qy == zero = (Infinity, Fq12 (Fq6 (Fq2 px zero) zero zero) (Fq6 (zero - tx) zero zero))
+  | otherwise = (Point x2 y2, Fq12 (Fq6 (Fq2 (zero - py) zero) zero zero) (Fq6 (Fq2 px zero * l') (ty - l' * tx) zero))
   where
-    l = (y2 - y1) * inv (x2 - x1)
-    x3 = l * l - x1 - x2
-    y3 = l * (x1 - x3) - y1
-    x12 = x1 * x1
-    l' = (x12 + x12 + x12) * inv (y1 + y1)
-    x3' = l' * l' - x1 - x2
-    y3' = l' * (x1 - x3') - y1
+    l = (qy - ty) * inv (qx - tx)
+    x1 = l * l - tx - qx
+    y1 = l * (tx - x1) - ty
+    xx = tx * tx
+    l' = (xx + xx + xx) * inv (ty + ty)
+    x2 = l' * l' - tx - qx
+    y2 = l' * (tx - x2) - ty
 lineFunction _ _ _ = (Infinity, mempty)
 {-# INLINEABLE lineFunction #-}
 

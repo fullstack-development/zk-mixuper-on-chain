@@ -7,6 +7,7 @@ import Plutarch.Pairing.BN128
 import Plutarch.Pairing.Group.Fq as Export
 import Plutarch.Pairing.Group.Fq12 as Export
 import Plutarch.Pairing.Group.Fq2 as Export
+import Plutarch.Pairing.Group.Fq6 as Export
 import Plutarch.Pairing.Group.Point as Export
 import Plutarch.Prelude
 import qualified Plutus.Pairing.BN128 as Plutus
@@ -15,7 +16,7 @@ type PG1 = PPoint PFq
 
 type PG2 = PPoint PFq2
 
-type PGT = PPoint PFq12
+type PGT = PFq12
 
 -- | Test whether a value satisfies the corresponding curve equation
 isOnCurve :: forall (s :: S) (a :: PType). (PIsData a, PNum a) => Term s (PPoint a) -> Term s PBool
