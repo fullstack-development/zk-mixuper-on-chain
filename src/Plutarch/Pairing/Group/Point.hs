@@ -39,6 +39,9 @@ pPoint x y =
           #$ pdcons @"y"
         # pdata y #$ pdnil
 
+pgAdd' :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PPoint a :--> PPoint a)
+pgAdd' = plam pgAdd
+
 pgAdd :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a) -> Term s (PPoint a) -> Term s (PPoint a)
 pgAdd pt qt = pmatch pt \case
   PInfinity _ -> qt

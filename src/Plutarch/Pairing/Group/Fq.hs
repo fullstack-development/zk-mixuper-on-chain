@@ -36,6 +36,9 @@ instance PNum PFq where
 pfq :: Term s PInteger -> Term s PFq
 pfq = pcon . PFq
 
+pfqSafe :: Term s PInteger -> Term s PFq
+pfqSafe i = pfq $ pmod # i # _q
+
 pmkFq :: Integer -> Term s PFq
 pmkFq i = pcon . PFq . pconstant $ i `PlutusTx.modulo` Plutus._q
 

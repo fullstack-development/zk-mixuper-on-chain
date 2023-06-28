@@ -94,6 +94,9 @@ library
     Plutarch.Pairing.Group.Fq6
     Plutarch.Pairing.Group.Point
     Plutarch.Pairing.MillerAlgorithm
+    Plutarch.ZK
+    Plutarch.ZK.Types
+    Plutarch.ZK.Validation
     Plutus.Pairing
     Plutus.Pairing.BN128
     Plutus.Pairing.Group
@@ -103,6 +106,7 @@ library
     Plutus.Pairing.Group.Fq6
     Plutus.Pairing.Group.Point
     Plutus.Pairing.MillerAlgorithm
+    Plutus.ZK
     Plutus.ZK.Types
     Plutus.ZK.Validation
 
