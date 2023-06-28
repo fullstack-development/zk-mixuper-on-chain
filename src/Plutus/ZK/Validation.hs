@@ -28,3 +28,10 @@ mkVerifyProof VerificationKey {..} input Proof {..} =
     <> pairing proofC vkDelta2
   where
     vkX = mkVkX input vkIC0 vkIC
+
+{-# INLINEABLE validateProofPoints #-}
+validateProofPoints :: Proof -> Bool
+validateProofPoints Proof {..} = True
+
+-- TODO:
+-- isOnCurveG1 proofA && isOnCurveG2 proofB && isOnCurveG1 proofC

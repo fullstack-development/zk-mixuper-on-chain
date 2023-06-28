@@ -37,3 +37,9 @@ pmkVkX =
   phoistAcyclic $
     plam \input ic0 ic ->
       pfoldl # pgAdd' # ic0 # (pzipWith # pgMul # ic # input)
+
+pvalidateProofPoints :: Term s (PProof :--> PBool)
+pvalidateProofPoints = plam $ const (pconstant True)
+
+-- TODO:
+-- isOnCurveG1 proofA && isOnCurveG2 proofB && isOnCurveG1 proofC

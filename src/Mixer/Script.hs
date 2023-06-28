@@ -3,6 +3,7 @@ module Mixer.Script where
 import Ext.Plutarch.Api.V2.Contexts (filterInputsByToken, filterOutputsByToken, inlineDatumFromOutput, pfindOwnInput, pgetContinuingOutputs, pgetOnlyOneOutputFromList)
 import Ext.Plutarch.Api.V2.Value (SortedPositiveValue)
 import Mixer.Datum (PMixerDatum (PDepositTree, PVault), PWithdrawConfig, PWithdrawDatum (..), PWithdrawRedeemer (..))
+import Mixer.Script.Withdraw (validateWithdraw)
 import Plutarch.Api.V1.Value (PCurrencySymbol, PTokenName, plovelaceValueOf, pvalueOf)
 import Plutarch.Api.V2 (
   PDatum,
@@ -44,7 +45,7 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   (oldState, _) <- ptryFrom @PWithdrawDatum d
   (redeemer, _) <- ptryFrom @PWithdrawRedeemer r
   ctx <- pletFields @["txInfo", "purpose"] ctx'
-  info <- pletFields @'["inputs", "outputs", "referenceInputs"] $ ctx.txInfo
+  info <- pletFields @'["inputs", "outputs", "referenceInputs", "signatories"] $ ctx.txInfo
   -- Find own input:
   PSpending i <- pmatch ctx.purpose
   let ownInputRef = pfield @"_0" # i
@@ -56,7 +57,7 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   (nextState, _) <- ptryFrom @PWithdrawDatum $ inlineDatumFromOutput # ownOutput.datum
   outputState <- pletFields @'["nullifierHashes"] nextState
   -- Check protocol token:
-  conf <- pletFields @'["protocolCurrency", "depositTreeTokenName", "vaultTokenName", "nullifierStoreTokenName", "poolNominal"] config
+  conf <- pletFields @'["protocolCurrency", "depositTreeTokenName", "vaultTokenName", "nullifierStoreTokenName", "poolNominal", "vk"] config
   PUnit <- pmatch $ containsOneProtocolToken # conf.protocolCurrency # conf.nullifierStoreTokenName # ownOutput.value
   inputState <- pletFields @'["nullifierHashes"] oldState
   -- Get deposit tree reference input:
@@ -79,29 +80,10 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
   (vaultDatum, _) <- ptryFrom @PMixerDatum (inlineDatumFromOutput # vaultOutput.datum)
   PVault _ <- pmatch vaultDatum
   -- Validate withdraw:
-  rdm <- pletFields @'["publicInput"] redeemer
+  rdm <- pletFields @'["publicInput", "proof"] redeemer
   popaque $
     unTermCont $
-      validateWithdraw conf inputState outputState inputValue vaultOutput.value treeRoot rdm
-
-validateWithdraw ::
-  ( PMemberFields PWithdrawDatum '["nullifierHashes"] s datum
-  , PMemberFields PWithdrawConfig '["poolNominal"] s config
-  , PMemberFields PWithdrawRedeemer '["publicInput"] s redeemer
-  ) =>
-  HRec config ->
-  HRec datum ->
-  HRec datum ->
-  Term s SortedPositiveValue ->
-  Term s SortedPositiveValue ->
-  Term s (PMaybeData (PAsData PInteger)) ->
-  HRec redeemer ->
-  TermCont s (Term s PUnit)
-validateWithdraw conf inputState outputState inputValue outputValue currentRoot redeemer = do
-  PDJust root <- pmatchC currentRoot
-  let r = pforgetData $ pfield @"_0" # root
-  pguardC "Merkle root is not current" $ (pasInt # r) #== redeemer.publicInput
-  pure $ pconstant ()
+      validateWithdraw conf ctx.txInfo inputState outputState inputValue vaultOutput.value treeRoot rdm
 
 containsOneProtocolToken ::
   Term

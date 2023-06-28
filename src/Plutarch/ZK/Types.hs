@@ -2,11 +2,24 @@ module Plutarch.ZK.Types where
 
 import Plutarch.DataRepr (PDataFields)
 import qualified Plutarch.Monadic as P
-import Plutarch.Pairing.Group
+import Plutarch.Pairing.BN128 (_r)
+import Plutarch.Pairing.Group (
+  PG1,
+  PG1Data,
+  PG2,
+  PG2Data,
+  pG1fromData,
+  pG1fromDataTrusted,
+  pG2fromData,
+  pG2fromDataTrusted,
+ )
 import Plutarch.Prelude
 
 -- | Public input (exponent) represented as a number in field Fr
 type PFr = PInteger
+
+pnormalizeFr :: Term s PFr -> Term s PFr
+pnormalizeFr f = pmod # f # _r
 
 newtype PVerificationKeyData (s :: S)
   = PVerificationKeyData (Term s (PDataRecord '["alfa1" := PG1Data, "beta2" := PG2Data, "gamma2" := PG2Data, "delta2" := PG2Data, "ic0" := PG1Data, "ic" := PBuiltinList (PAsData PG1Data)]))

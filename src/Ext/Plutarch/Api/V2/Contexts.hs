@@ -1,6 +1,8 @@
 module Ext.Plutarch.Api.V2.Contexts where
 
-import Plutarch.Api.V1.Value (pvalueOf)
+import Plutarch.Api.V1.Address (PCredential (..))
+import Plutarch.Api.V1.AssocMap (pempty)
+import Plutarch.Api.V1.Value (padaSymbol, padaToken, pvalueOf)
 import Plutarch.Api.V2
 import qualified Plutarch.List as List
 import Plutarch.Prelude
@@ -78,3 +80,29 @@ filterOutputsByToken :: Term s (PCurrencySymbol :--> PTokenName :--> PBuiltinLis
 filterOutputsByToken = phoistAcyclic $
   plam $ \cs tn outs ->
     pfilter # (outputContainsToken # cs # tn) # outs
+
+pAdaAmountPaidTo ::
+  Term s (PPubKeyHash :--> PTxInfo :--> PInteger)
+pAdaAmountPaidTo = phoistAcyclic $
+  plam $ \pkh txInfo ->
+    let outputs = pfield @"outputs" # txInfo
+     in pfoldl
+          # sumValue
+          # 0
+            #$ pfilter
+          # (matches # pkh)
+          # outputs
+  where
+    matches :: Term s (PPubKeyHash :--> PTxOut :--> PBool)
+    matches = phoistAcyclic $
+      plam $ \pkh txOut ->
+        let adr = pfield @"address" # txOut
+            credential = pfield @"credential" # adr
+         in pmatch (pfromData credential) $ \case
+              PPubKeyCredential pkh' -> (pfield @"_0" # pkh') #== pkh
+              _ -> pconstant False
+
+    sumValue :: Term s (PInteger :--> PTxOut :--> PInteger)
+    sumValue = phoistAcyclic $
+      plam $ \acc txOut ->
+        acc + (pvalueOf # (pfield @"value" # txOut) # padaSymbol # padaToken)

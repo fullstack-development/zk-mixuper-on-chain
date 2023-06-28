@@ -28,7 +28,7 @@ gcdExt a b
 byte2Bits :: Integer -> [Bool]
 byte2Bits n
   | n == 0 = zeroArr
-  | otherwise = take (8 - length binaryN) zeroArr <> binaryN
+  | otherwise = drop (length binaryN) zeroArr <> binaryN
   where
     zeroArr = replicate 8 False
     binaryN = reverse $ go n
