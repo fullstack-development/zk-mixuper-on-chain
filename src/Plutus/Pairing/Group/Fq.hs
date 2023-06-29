@@ -34,12 +34,9 @@ newtype Fq
     Fq Integer
   deriving stock (Generic, Haskell.Show, Haskell.Eq, Haskell.Ord)
   deriving anyclass (FromJSON, ToJSON)
+  deriving newtype (PlutusTx.ToData, PlutusTx.FromData, PlutusTx.UnsafeFromData)
 
 PlutusTx.makeLift ''Fq
-
-PlutusTx.makeIsDataIndexed
-  ''Fq
-  [('Fq, 0)]
 
 instance Eq Fq where
   {-# INLINEABLE (==) #-}

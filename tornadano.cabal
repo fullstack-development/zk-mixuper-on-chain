@@ -97,6 +97,7 @@ library
     Plutarch.Pairing.Group.Point
     Plutarch.Pairing.MillerAlgorithm
     Plutarch.ZK
+    Plutarch.ZK.Example
     Plutarch.ZK.Types
     Plutarch.ZK.Validation
     Plutus.Pairing
@@ -109,6 +110,7 @@ library
     Plutus.Pairing.Group.Point
     Plutus.Pairing.MillerAlgorithm
     Plutus.ZK
+    Plutus.ZK.Example
     Plutus.ZK.Types
     Plutus.ZK.Validation
 
