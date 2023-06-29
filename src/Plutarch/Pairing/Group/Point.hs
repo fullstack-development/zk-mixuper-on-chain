@@ -82,14 +82,29 @@ pgNeg pt = pmatch pt \case
 -- | Multiplication by a scalar
 pgMul :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PInteger :--> PPoint a)
 pgMul =
-  pfix #$ plam \self pt n ->
-    pif (n #< 0) (ptraceError "pgMul: negative scalar not supported") $
-      pif (n #== 0) pInfinity $
-        pif (n #== 1) pt $
-          pif
-            (peven # n)
-            (self # pgDouble pt # (pdiv # n # 2))
-            (pgAdd (self # pgDouble pt # (pdiv # n # 2)) pt)
+  plam $
+    \pt n ->
+      pif (n #< 0) (ptraceError "pgMul: negative scalar not supported") $
+        pif (n #== 0) pInfinity $
+          pif (n #== 1) pt (f # pt # n)
+  where
+    f :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PInteger :--> PPoint a)
+    f =
+      pfix #$ plam \self x y -> P.do
+        doubleP <- plet $ pgDouble x
+        next <- plet $ pquot # y # 2
+        pif (peven # y) (self # doubleP # next) $
+          pif (y #== 1) x $
+            g # doubleP # next # x
+    g :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PInteger :--> PPoint a :--> PPoint a)
+    g =
+      pfix #$ plam \self x y z -> P.do
+        doubleP <- plet $ pgDouble x
+        xz <- plet $ pgAdd x z
+        next <- plet $ pquot # y # 2
+        pif (peven # y) (self # doubleP # next # z) $
+          pif (y #== 1) xz $
+            self # doubleP # next # xz
 
 instance (PIsData a, PNum a, PlutusTx.Group (Term s a)) => PlutusTx.Semigroup (Term s (PPoint a)) where
   p1 <> p2 = pif (p1 #== p2) (pgDouble p1) (pgAdd p1 p2)
