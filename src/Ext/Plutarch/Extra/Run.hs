@@ -8,6 +8,7 @@ import Plutarch (ClosedTerm, Script, compile)
 import Plutarch.Evaluate (evalScript)
 import Plutarch.Prelude
 import Plutarch.Script (Script (..), serialiseScript)
+import Plutonomy (optimizeUPLC)
 import PlutusCore (
   DeBruijn,
   DefaultFun,
@@ -34,7 +35,8 @@ evalT x = evalWithArgsT x []
 evalWithArgsT :: ClosedTerm a -> [Data] -> Either Text (Script, ExBudget, [Text])
 evalWithArgsT x args = do
   cmp <- compile def x
-  let (escr, budg, trc) = evalScript $ applyArguments cmp args
+  let optimized = Script $ optimizeUPLC (unScript cmp)
+  let (escr, budg, trc) = evalScript $ applyArguments optimized args
   scr <- first (pack . show) escr
   pure (scr, budg, trc)
 

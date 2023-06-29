@@ -122,6 +122,7 @@ library
     , lens
     , plutarch
     , plutarch-extra
+    , plutonomy
     , plutus-core
     , plutus-ledger-api
     , plutus-tx
