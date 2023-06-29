@@ -44,45 +44,51 @@ pPoint x y =
           #$ pdcons @"y"
         # pdata y #$ pdnil
 
-pgAdd' :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PPoint a :--> PPoint a)
-pgAdd' = phoistAcyclic $ plam pgAdd
-
 pgAdd :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a) -> Term s (PPoint a) -> Term s (PPoint a)
-pgAdd pt qt = pmatch pt \case
-  PInfinity _ -> qt
-  PPoint pr -> pmatch qt \case
-    PInfinity _ -> pt
-    PPoint qr -> P.do
+pgAdd pt qt = pgAdd' # pt # qt
+
+pgAdd' :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PPoint a :--> PPoint a)
+pgAdd' = phoistAcyclic $ plam
+  \pt qt -> pmatch pt \case
+    PInfinity _ -> qt
+    PPoint pr -> pmatch qt \case
+      PInfinity _ -> pt
+      PPoint qr -> P.do
+        p <- pletFields @'["x", "y"] pr
+        q <- pletFields @'["x", "y"] qr
+        pif (p.x #== q.x) pInfinity P.do
+          l <- plet $ (p.y - q.y) * pinv (p.x - q.x)
+          x <- plet $ l * l - p.x - q.x
+          y <- plet $ l * (p.x - x) - p.y
+          pPoint x y
+
+pgDouble :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a) -> Term s (PPoint a)
+pgDouble pt = pgDouble' # pt
+
+pgDouble' :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PPoint a)
+pgDouble' = phoistAcyclic $ plam
+  \pt -> pmatch pt \case
+    PInfinity _ -> pInfinity
+    PPoint pr -> P.do
       p <- pletFields @'["x", "y"] pr
-      q <- pletFields @'["x", "y"] qr
-      pif (p.x #== q.x) pInfinity P.do
-        l <- plet $ (p.y - q.y) * pinv (p.x - q.x)
-        x <- plet $ l * l - p.x - q.x
+      pif (p.y #== pdata 0) pInfinity P.do
+        xx <- plet $ p.x * p.x
+        l <- plet $ (xx + xx + xx) * pinv (p.y + p.y)
+        x <- plet $ l * l - p.x - p.x
         y <- plet $ l * (p.x - x) - p.y
         pPoint x y
 
-pgDouble :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a) -> Term s (PPoint a)
-pgDouble pt = pmatch pt \case
-  PInfinity _ -> pInfinity
-  PPoint pr -> P.do
-    p <- pletFields @'["x", "y"] pr
-    pif (p.y #== pdata zero) pInfinity P.do
-      xx <- plet $ p.x * p.x
-      l <- plet $ (xx + xx + xx) * pinv (p.y + p.y)
-      x <- plet $ l * l - p.x - p.x
-      y <- plet $ l * (p.x - x) - p.y
-      pPoint x y
-    where
-      zero :: PNum a => Term s a
-      zero = pfromInteger 0
+pgNeg :: (PIsData a, PNum a) => Term s (PPoint a) -> Term s (PPoint a)
+pgNeg pt = pgNeg' # pt
 
 -- | Negation (flipping the y component)
-pgNeg :: (PIsData a, PNum a) => Term s (PPoint a) -> Term s (PPoint a)
-pgNeg pt = pmatch pt \case
-  PInfinity _ -> pInfinity
-  PPoint pr -> P.do
-    p <- pletFields @'["x", "y"] pr
-    pPoint p.x (pnegate # p.y)
+pgNeg' :: (PIsData a, PNum a) => Term s (PPoint a :--> PPoint a)
+pgNeg' = phoistAcyclic $ plam
+  \pt -> pmatch pt \case
+    PInfinity _ -> pInfinity
+    PPoint pr -> P.do
+      p <- pletFields @'["x", "y"] pr
+      pPoint p.x (pnegate # p.y)
 
 -- | Multiplication by a scalar
 pgMul :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PInteger :--> PPoint a)

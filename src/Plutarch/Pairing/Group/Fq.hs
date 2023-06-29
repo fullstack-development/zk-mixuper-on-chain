@@ -48,29 +48,45 @@ pmkFq :: Integer -> Term s PFq
 pmkFq i = pcon . PFq . pconstant $ i `PlutusTx.modulo` Plutus._q
 
 pfqAdd :: Term s PFq -> Term s PFq -> Term s PFq
-pfqAdd at bt = P.do
-  PFq a <- pmatch at
-  PFq b <- pmatch bt
-  pfq $ pmod # (a + b) # _q
+pfqAdd at bt = pfqAdd' # at # bt
+
+pfqAdd' :: Term s (PFq :--> PFq :--> PFq)
+pfqAdd' = phoistAcyclic $ plam
+  \at bt -> P.do
+    PFq a <- pmatch at
+    PFq b <- pmatch bt
+    pfq $ pmod # (a + b) # _q
 
 pfqSub :: Term s PFq -> Term s PFq -> Term s PFq
-pfqSub at bt = P.do
-  PFq a <- pmatch at
-  PFq b <- pmatch bt
-  pfq $ pmod # (a - b) # _q
+pfqSub at bt = pfqSub' # at # bt
+
+pfqSub' :: Term s (PFq :--> PFq :--> PFq)
+pfqSub' = phoistAcyclic $ plam
+  \at bt -> P.do
+    PFq a <- pmatch at
+    PFq b <- pmatch bt
+    pfq $ pmod # (a - b) # _q
 
 pfqMul :: Term s PFq -> Term s PFq -> Term s PFq
-pfqMul at bt = P.do
-  PFq a <- pmatch at
-  PFq b <- pmatch bt
-  pfq $ pmod # (a * b) # _q
+pfqMul at bt = pfqMul' # at # bt
+
+pfqMul' :: Term s (PFq :--> PFq :--> PFq)
+pfqMul' = phoistAcyclic $ plam
+  \at bt -> P.do
+    PFq a <- pmatch at
+    PFq b <- pmatch bt
+    pfq $ pmod # (a * b) # _q
+
+pfqInv :: Term s PFq -> Term s PFq
+pfqInv t = pfqInv' # t
 
 -- | Multiplicative inverse
-pfqInv :: Term s PFq -> Term s PFq
-pfqInv t = P.do
-  PFq a <- pmatch t
-  PPair i _ <- pmatch $ pgcdExt # a # _q
-  pfq $ pmod # i # _q
+pfqInv' :: Term s (PFq :--> PFq)
+pfqInv' = phoistAcyclic $ plam
+  \t -> P.do
+    PFq a <- pmatch t
+    PPair i _ <- pmatch $ pgcdExt # a # _q
+    pfq $ pmod # i # _q
 
 -- | Quadratic non-residue
 pfqNqr :: Term s PFq
