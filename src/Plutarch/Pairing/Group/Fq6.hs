@@ -3,6 +3,11 @@ module Plutarch.Pairing.Group.Fq6 where
 import Plutarch.DataRepr (PDataFields)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Pairing.Group.Fq2 (
   PFq2,
   pfq2Inv,
@@ -115,3 +120,12 @@ instance PlutusTx.Monoid (Term s PFq6) where
 
 instance PlutusTx.Group (Term s PFq6) where
   inv = pfq6Inv
+
+instance PSemigroup PFq6 where
+  pappend = pfq6Mul
+
+instance PMonoid PFq6 where
+  pidentity = 1
+
+instance PGroup PFq6 where
+  pinv = pfq6Inv

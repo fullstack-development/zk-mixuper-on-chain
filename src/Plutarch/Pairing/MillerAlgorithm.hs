@@ -21,6 +21,11 @@ import Plutarch.Pairing.Group (
   pfrobeniusNaive,
   ppowUnitary,
  )
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Prelude
 import qualified PlutusTx.Monoid as PlutusTx
 import qualified PlutusTx.Semigroup as PlutusTx
@@ -42,7 +47,7 @@ pmillerAlgorithmBN =
     plam \list p q -> pmatch list \case
       PSNil -> 1
       PSCons x xs -> P.do
-        q' <- plet $ pif (x #<= 0) (PlutusTx.inv q) q
+        q' <- plet $ pif (x #<= 0) (pinv q) q
         pfinalStepBN
           # p
           # q
@@ -58,7 +63,7 @@ pfinalStepBN =
     plam \p q pair -> P.do
       PPair t f <- pmatch pair
       q1 <- plet $ pfrobTwisted # q
-      q2 <- plet $ PlutusTx.inv $ pfrobTwisted # q1
+      q2 <- plet $ pinv $ pfrobTwisted # q1
       PPair t' f' <- pmatch $ plineFunction # p # t # q1
       PPair _ f'' <- pmatch $ plineFunction # p # t' # q2
       f * f' * f''
@@ -74,7 +79,7 @@ pmillerLoop =
           pif
             (x #== 1)
             (self # p # q # xs #$ padditionStep # p # q # next)
-            (self # p # q # xs #$ padditionStep # p # PlutusTx.inv q # next)
+            (self # p # q # xs #$ padditionStep # p # pinv q # next)
 
 pdoublingStep :: Term s (PG1 :--> PPair PG2 PGT :--> PPair PG2 PGT)
 pdoublingStep =
@@ -96,7 +101,7 @@ pfinalExponentiationBN :: Term s (PInteger :--> PGT :--> PGT)
 pfinalExponentiationBN =
   phoistAcyclic $
     plam \u f -> P.do
-      p6 <- plet $ pfq12Conj f * PlutusTx.inv f
+      p6 <- plet $ pfq12Conj f * pinv f
       p2 <- plet $ p6 * (pfastFrobenius1 . pfastFrobenius1) p6
       fu <- plet $ ppowUnitary p2 u
       fu2 <- plet $ ppowUnitary fu u
@@ -130,11 +135,11 @@ plineFunction =
             t <- pletFields @'["x", "y"] tr
             q <- pletFields @'["x", "y"] qr
             yy :: Term s PFq2 <- plet $ t.y + q.y
-            l <- plet $ (q.y - t.y) * PlutusTx.inv (q.x - t.x)
+            l <- plet $ (q.y - t.y) * pinv (q.x - t.x)
             x1 <- plet $ l * l - t.x - q.x
             y1 <- plet $ l * (t.x - x1) - t.y
             xx <- plet $ t.x * t.x
-            l' <- plet $ (xx + xx + xx) * PlutusTx.inv (t.y + t.y)
+            l' <- plet $ (xx + xx + xx) * pinv (t.y + t.y)
             x2 <- plet $ l' * l' - t.x - q.x
             y2 <- plet $ l' * (t.x - x2) - t.y
             let case0 = pFq12 (pFq6 (pFq2 p.x 0) 0 0) (pFq6 (pnegate # t.x) 0 0)

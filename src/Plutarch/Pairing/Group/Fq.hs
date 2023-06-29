@@ -4,6 +4,11 @@ import Ext.Plutarch.Rational (pgcdExt)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
 import Plutarch.Pairing.BN128 (_nqr, _q)
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Prelude
 import qualified Plutus.Pairing.BN128 as Plutus
 import qualified PlutusTx.Monoid as PlutusTx
@@ -79,3 +84,12 @@ instance PlutusTx.Monoid (Term s PFq) where
 
 instance PlutusTx.Group (Term s PFq) where
   inv = pfqInv
+
+instance PSemigroup PFq where
+  pappend = pfqMul
+
+instance PMonoid PFq where
+  pidentity = 1
+
+instance PGroup PFq where
+  pinv = pfqInv

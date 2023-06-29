@@ -4,6 +4,11 @@ import Ext.Plutarch.Num (peven)
 import Plutarch.Api.V2 (PTuple)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Prelude
 import qualified PlutusTx.Monoid as PlutusTx
 import qualified PlutusTx.Prelude as PlutusTx
@@ -39,10 +44,10 @@ pPoint x y =
           #$ pdcons @"y"
         # pdata y #$ pdnil
 
-pgAdd' :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PPoint a :--> PPoint a)
-pgAdd' = plam pgAdd
+pgAdd' :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PPoint a :--> PPoint a)
+pgAdd' = phoistAcyclic $ plam pgAdd
 
-pgAdd :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a) -> Term s (PPoint a) -> Term s (PPoint a)
+pgAdd :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a) -> Term s (PPoint a) -> Term s (PPoint a)
 pgAdd pt qt = pmatch pt \case
   PInfinity _ -> qt
   PPoint pr -> pmatch qt \case
@@ -51,19 +56,19 @@ pgAdd pt qt = pmatch pt \case
       p <- pletFields @'["x", "y"] pr
       q <- pletFields @'["x", "y"] qr
       pif (p.x #== q.x) pInfinity P.do
-        l <- plet $ (p.y - q.y) * PlutusTx.inv (p.x - q.x)
+        l <- plet $ (p.y - q.y) * pinv (p.x - q.x)
         x <- plet $ l * l - p.x - q.x
         y <- plet $ l * (p.x - x) - p.y
         pPoint x y
 
-pgDouble :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a) -> Term s (PPoint a)
+pgDouble :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a) -> Term s (PPoint a)
 pgDouble pt = pmatch pt \case
   PInfinity _ -> pInfinity
   PPoint pr -> P.do
     p <- pletFields @'["x", "y"] pr
     pif (p.y #== pdata zero) pInfinity P.do
       xx <- plet $ p.x * p.x
-      l <- plet $ (xx + xx + xx) * PlutusTx.inv (p.y + p.y)
+      l <- plet $ (xx + xx + xx) * pinv (p.y + p.y)
       x <- plet $ l * l - p.x - p.x
       y <- plet $ l * (p.x - x) - p.y
       pPoint x y
@@ -80,37 +85,39 @@ pgNeg pt = pmatch pt \case
     pPoint p.x (pnegate # p.y)
 
 -- | Multiplication by a scalar
-pgMul :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PInteger :--> PPoint a)
-pgMul =
+pgMul :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PInteger :--> PPoint a)
+pgMul = phoistAcyclic $
   plam $
     \pt n ->
       pif (n #< 0) (ptraceError "pgMul: negative scalar not supported") $
         pif (n #== 0) pInfinity $
           pif (n #== 1) pt (f # pt # n)
   where
-    f :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PInteger :--> PPoint a)
+    f :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PInteger :--> PPoint a)
     f =
-      pfix #$ plam \self x y -> P.do
-        doubleP <- plet $ pgDouble x
-        next <- plet $ pquot # y # 2
-        pif (peven # y) (self # doubleP # next) $
-          pif (y #== 1) x $
-            g # doubleP # next # x
-    g :: (PIsData a, PNum a, PlutusTx.Group (Term s a)) => Term s (PPoint a :--> PInteger :--> PPoint a :--> PPoint a)
+      phoistAcyclic $
+        pfix #$ plam \self x y -> P.do
+          doubleP <- plet $ pgDouble x
+          next <- plet $ pquot # y # 2
+          pif (peven # y) (self # doubleP # next) $
+            pif (y #== 1) x $
+              g # doubleP # next # x
+    g :: (PIsData a, PNum a, PGroup a) => Term s (PPoint a :--> PInteger :--> PPoint a :--> PPoint a)
     g =
-      pfix #$ plam \self x y z -> P.do
-        doubleP <- plet $ pgDouble x
-        xz <- plet $ pgAdd x z
-        next <- plet $ pquot # y # 2
-        pif (peven # y) (self # doubleP # next # z) $
-          pif (y #== 1) xz $
-            self # doubleP # next # xz
+      phoistAcyclic $
+        pfix #$ plam \self x y z -> P.do
+          doubleP <- plet $ pgDouble x
+          xz <- plet $ pgAdd x z
+          next <- plet $ pquot # y # 2
+          pif (peven # y) (self # doubleP # next # z) $
+            pif (y #== 1) xz $
+              self # doubleP # next # xz
 
-instance (PIsData a, PNum a, PlutusTx.Group (Term s a)) => PlutusTx.Semigroup (Term s (PPoint a)) where
-  p1 <> p2 = pif (p1 #== p2) (pgDouble p1) (pgAdd p1 p2)
+instance (PIsData a, PNum a, PGroup a) => PSemigroup (PPoint a) where
+  pappend p1 p2 = pif (p1 #== p2) (pgDouble p1) (pgAdd p1 p2)
 
-instance (PIsData a, PNum a, PlutusTx.Group (Term s a)) => PlutusTx.Monoid (Term s (PPoint a)) where
-  mempty = pInfinity
+instance (PIsData a, PNum a, PGroup a) => PMonoid (PPoint a) where
+  pidentity = pInfinity
 
-instance (PIsData a, PNum a, PlutusTx.Group (Term s a)) => PlutusTx.Group (Term s (PPoint a)) where
-  inv = pgNeg
+instance (PIsData a, PNum a, PGroup a) => PGroup (PPoint a) where
+  pinv = pgNeg

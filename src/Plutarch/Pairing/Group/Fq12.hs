@@ -4,6 +4,11 @@ import Ext.Plutarch.Num (ppow)
 import Plutarch.DataRepr (PDataFields)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Pairing.Group.Fq2 (pFq2, pfq2Conj)
 import Plutarch.Pairing.Group.Fq6 (
   PFq6,
@@ -139,3 +144,12 @@ instance PlutusTx.Monoid (Term s PFq12) where
 
 instance PlutusTx.Group (Term s PFq12) where
   inv = pfq12Inv
+
+instance PSemigroup PFq12 where
+  pappend = pfq12Mul
+
+instance PMonoid PFq12 where
+  pidentity = 1
+
+instance PGroup PFq12 where
+  pinv = pfq12Inv
