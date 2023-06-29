@@ -95,32 +95,26 @@ padditionStep =
 pfinalExponentiationBN :: Term s (PInteger :--> PGT :--> PGT)
 pfinalExponentiationBN =
   phoistAcyclic $
-    plam \u -> hardPart u . easyPart
-  where
-    easyPart :: Term s PGT -> Term s PGT
-    easyPart =
-      let
-        p6 f = pfq12Conj f * PlutusTx.inv f
-        p2 f = f * (pfastFrobenius1 . pfastFrobenius1) f
-       in
-        p2 . p6
-
-    hardPart :: Term s PInteger -> Term s PGT -> Term s PGT
-    hardPart u f = P.do
-      fu <- plet $ ppowUnitary f u
+    plam \u f -> P.do
+      p6 <- plet $ pfq12Conj f * PlutusTx.inv f
+      p2 <- plet $ p6 * (pfastFrobenius1 . pfastFrobenius1) p6
+      fu <- plet $ ppowUnitary p2 u
       fu2 <- plet $ ppowUnitary fu u
       fu3 <- plet $ ppowUnitary fu2 u
       fpu <- plet $ pfastFrobenius1 fu2
-      y0 <- plet $ pfastFrobenius1 (f * pfastFrobenius1 (f * pfastFrobenius1 f))
-      y1 <- plet $ pfq12Conj f
+      y0 <- plet $ pfastFrobenius1 (p2 * pfastFrobenius1 (p2 * pfastFrobenius1 p2))
+      y1 <- plet $ pfq12Conj p2
       y2 <- plet $ pfastFrobenius1 fpu
       y3 <- plet $ pfq12Conj $ pfastFrobenius1 fu
       y4 <- plet $ pfq12Conj $ fu * fpu
       y5 <- plet $ pfq12Conj fu2
       y6 <- plet $ pfq12Conj $ fu3 * pfastFrobenius1 fu3
-      p4'' <- plet $ y4 * y5 * join (*) y6
-      p4' <- plet $ join (*) $ p4'' * y2 * join (*) (p4'' * y3 * y5)
-      p4' * y0 * join (*) (p4' * y1)
+      p4'' <- plet $ y4 * y5 * y6 * y6
+      v1 <- plet $ p4'' * y3 * y5
+      v2 <- plet $ p4'' * y2 * v1 * v1
+      p4' <- plet $ v2 * v2
+      v3 <- plet $ p4' * y1
+      p4' * y0 * v3 * v3
 
 plineFunction :: Term s (PG1 :--> PG2 :--> PG2 :--> PPair PG2 PGT)
 plineFunction =
