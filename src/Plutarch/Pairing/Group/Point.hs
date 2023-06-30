@@ -247,5 +247,5 @@ pmulJ =
       pif (n #< 0) (pinvJ #$ self # pt # (pnegate # n)) $
         pif (n #== 0) (pPointJ 1 1 0) $
           pif (n #== 1) pt P.do
-            p' <- plet $ pmulJ # (pdoubleJ # pt) # (pdiv # n # 2)
+            p' <- plet $ self # (pdoubleJ # pt) # (pdiv # n # 2)
             pif (peven # n) p' (paddJ # pt # p')
