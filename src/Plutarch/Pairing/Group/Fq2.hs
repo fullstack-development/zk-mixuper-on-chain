@@ -3,6 +3,11 @@ module Plutarch.Pairing.Group.Fq2 where
 import Plutarch.DataRepr (PDataFields)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Pairing.Group.Fq (PFq (..), pfqInv, pfqNqr, pmkFq)
 import Plutarch.Prelude
 import qualified Plutus.Pairing.BN128 as Plutus
@@ -55,47 +60,71 @@ pmkFq2 i =
     y = pdata 0
 
 pfq2Add :: Term s PFq2 -> Term s PFq2 -> Term s PFq2
-pfq2Add at bt = P.do
-  a <- pletFields @'["x", "y"] at
-  b <- pletFields @'["x", "y"] bt
-  pFq2 (a.x + b.x) (a.y + b.y)
+pfq2Add at bt = pfq2Add' # at # bt
+
+pfq2Add' :: Term s (PFq2 :--> PFq2 :--> PFq2)
+pfq2Add' = phoistAcyclic $ plam
+  \at bt -> P.do
+    a <- pletFields @'["x", "y"] at
+    b <- pletFields @'["x", "y"] bt
+    pFq2 (a.x + b.x) (a.y + b.y)
 
 pfq2Sub :: Term s PFq2 -> Term s PFq2 -> Term s PFq2
-pfq2Sub at bt = P.do
-  a <- pletFields @'["x", "y"] at
-  b <- pletFields @'["x", "y"] bt
-  pFq2 (a.x - b.x) (a.y - b.y)
+pfq2Sub at bt = pfq2Sub' # at # bt
+
+pfq2Sub' :: Term s (PFq2 :--> PFq2 :--> PFq2)
+pfq2Sub' = phoistAcyclic $ plam
+  \at bt -> P.do
+    a <- pletFields @'["x", "y"] at
+    b <- pletFields @'["x", "y"] bt
+    pFq2 (a.x - b.x) (a.y - b.y)
 
 pfq2Mul :: Term s PFq2 -> Term s PFq2 -> Term s PFq2
-pfq2Mul at bt = P.do
-  a <- pletFields @'["x", "y"] at
-  b <- pletFields @'["x", "y"] bt
-  xx <- plet (a.x #* b.x)
-  yy <- plet (a.y #* b.y)
-  pFq2 (yy * pfqNqr + xx) $ (a.x + a.y) * (b.x + b.y) - xx - yy
+pfq2Mul at bt = pfq2Mul' # at # bt
+
+pfq2Mul' :: Term s (PFq2 :--> PFq2 :--> PFq2)
+pfq2Mul' = phoistAcyclic $ plam
+  \at bt -> P.do
+    a <- pletFields @'["x", "y"] at
+    b <- pletFields @'["x", "y"] bt
+    xx <- plet (a.x #* b.x)
+    yy <- plet (a.y #* b.y)
+    pFq2 (yy * pfqNqr + xx) $ (a.x + a.y) * (b.x + b.y) - xx - yy
+
+pfq2Inv :: Term s PFq2 -> Term s PFq2
+pfq2Inv at = pfq2Inv' # at
 
 -- | Multiplicative inverse
-pfq2Inv :: Term s PFq2 -> Term s PFq2
-pfq2Inv at = P.do
-  a <- pletFields @'["x", "y"] at
-  t <- plet $ pfqInv (a.x * a.x - a.y * a.y * pfqNqr)
-  pFq2 (a.x * t) $ pnegate # (a.y * t)
+pfq2Inv' :: Term s (PFq2 :--> PFq2)
+pfq2Inv' = phoistAcyclic $ plam
+  \at -> P.do
+    a <- pletFields @'["x", "y"] at
+    t <- plet $ pfqInv (a.x * a.x - a.y * a.y * pfqNqr)
+    pFq2 (a.x * t) $ pnegate # (a.y * t)
+
+pfq2Conj :: Term s PFq2 -> Term s PFq2
+pfq2Conj at = pfq2Conj' # at
 
 -- | Conjugation
-pfq2Conj :: Term s PFq2 -> Term s PFq2
-pfq2Conj at = P.do
-  a <- pletFields @'["x", "y"] at
-  pFq2 a.x (pnegate # a.y)
+pfq2Conj' :: Term s (PFq2 :--> PFq2)
+pfq2Conj' = phoistAcyclic $ plam
+  \at -> P.do
+    a <- pletFields @'["x", "y"] at
+    pFq2 a.x (pnegate # a.y)
 
 -- | Cubic non-residue in @Fq2@
 pxi :: Term s PFq2
 pxi = pFq2 (pmkFq Plutus._xiA) (pmkFq Plutus._xiB)
 
--- | Multiplication by a scalar in @Fq@
 pfq2scalarMul :: Term s PFq -> Term s PFq2 -> Term s PFq2
-pfq2scalarMul a bt = P.do
-  b <- pletFields @'["x", "y"] bt
-  pFq2 (a * b.x) (a * b.y)
+pfq2scalarMul a bt = pfq2scalarMul' # a # bt
+
+-- | Multiplication by a scalar in @Fq@
+pfq2scalarMul' :: Term s (PFq :--> PFq2 :--> PFq2)
+pfq2scalarMul' = phoistAcyclic $ plam
+  \a bt -> P.do
+    b <- pletFields @'["x", "y"] bt
+    pFq2 (a * b.x) (a * b.y)
 
 -- | Multiply by @xi@
 pmulXiFq2 :: Term s (PFq2 :--> PFq2)
@@ -109,3 +138,12 @@ instance PlutusTx.Monoid (Term s PFq2) where
 
 instance PlutusTx.Group (Term s PFq2) where
   inv = pfq2Inv
+
+instance PSemigroup PFq2 where
+  pappend = pfq2Mul
+
+instance PMonoid PFq2 where
+  pidentity = 1
+
+instance PGroup PFq2 where
+  pinv = pfq2Inv

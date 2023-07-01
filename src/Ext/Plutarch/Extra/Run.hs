@@ -5,16 +5,18 @@ import Data.ByteString.Short (ShortByteString)
 import Data.Default (Default (..))
 import Data.Text (Text, pack)
 import Plutarch (ClosedTerm, Script, compile)
-import Plutarch.Evaluate (evalScript)
+import Plutarch.Evaluate (evalScript')
 import Plutarch.Prelude
 import Plutarch.Script (Script (..), serialiseScript)
+import Plutonomy (optimizeUPLC)
 import PlutusCore (
   DeBruijn,
   DefaultFun,
   DefaultUni,
  )
 import PlutusCore.Data (Data)
-import PlutusCore.Evaluation.Machine.ExBudget (ExBudget)
+import PlutusCore.Evaluation.Machine.ExBudget (ExBudget (ExBudget))
+import PlutusCore.Evaluation.Machine.ExMemory (ExCPU (..), ExMemory (..))
 import PlutusCore.MkPlc (mkConstant, mkIterApp)
 import PlutusPrelude (over)
 import UntypedPlutusCore (Program, progTerm)
@@ -34,7 +36,9 @@ evalT x = evalWithArgsT x []
 evalWithArgsT :: ClosedTerm a -> [Data] -> Either Text (Script, ExBudget, [Text])
 evalWithArgsT x args = do
   cmp <- compile def x
-  let (escr, budg, trc) = evalScript $ applyArguments cmp args
+  let optimized = Script $ optimizeUPLC (unScript cmp)
+  let budget = ExBudget (ExCPU 10_000_000_000) (ExMemory 14_000_000)
+  let (escr, budg, trc) = evalScript' budget $ applyArguments optimized args
   scr <- first (pack . show) escr
   pure (scr, budg, trc)
 

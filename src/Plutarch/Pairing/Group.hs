@@ -4,6 +4,7 @@ import Ext.Plutarch.Num (ppow)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
 import Plutarch.Pairing.BN128 (_q)
+import Plutarch.Pairing.Group.Class as Export
 import Plutarch.Pairing.Group.Fq as Export
 import Plutarch.Pairing.Group.Fq12 as Export
 import Plutarch.Pairing.Group.Fq2 as Export

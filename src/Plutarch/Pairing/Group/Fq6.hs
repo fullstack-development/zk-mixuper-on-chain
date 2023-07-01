@@ -3,6 +3,11 @@ module Plutarch.Pairing.Group.Fq6 where
 import Plutarch.DataRepr (PDataFields)
 import qualified Plutarch.Monadic as P
 import Plutarch.Num (PNum (..))
+import Plutarch.Pairing.Group.Class (
+  PGroup (..),
+  PMonoid (..),
+  PSemigroup (..),
+ )
 import Plutarch.Pairing.Group.Fq2 (
   PFq2,
   pfq2Inv,
@@ -66,38 +71,54 @@ pmkFq6 i =
     zero = pdata 0
 
 pfq6Add :: Term s PFq6 -> Term s PFq6 -> Term s PFq6
-pfq6Add at bt = P.do
-  a <- pletFields @'["x", "y", "z"] at
-  b <- pletFields @'["x", "y", "z"] bt
-  pFq6 (a.x + b.x) (a.y + b.y) (a.z + b.z)
+pfq6Add at bt = pfq6Add' # at # bt
+
+pfq6Add' :: Term s (PFq6 :--> PFq6 :--> PFq6)
+pfq6Add' = phoistAcyclic $ plam
+  \at bt -> P.do
+    a <- pletFields @'["x", "y", "z"] at
+    b <- pletFields @'["x", "y", "z"] bt
+    pFq6 (a.x + b.x) (a.y + b.y) (a.z + b.z)
 
 pfq6Sub :: Term s PFq6 -> Term s PFq6 -> Term s PFq6
-pfq6Sub at bt = P.do
-  a <- pletFields @'["x", "y", "z"] at
-  b <- pletFields @'["x", "y", "z"] bt
-  pFq6 (a.x - b.x) (a.y - b.y) (a.z - b.z)
+pfq6Sub at bt = pfq6Sub' # at # bt
+
+pfq6Sub' :: Term s (PFq6 :--> PFq6 :--> PFq6)
+pfq6Sub' = phoistAcyclic $ plam
+  \at bt -> P.do
+    a <- pletFields @'["x", "y", "z"] at
+    b <- pletFields @'["x", "y", "z"] bt
+    pFq6 (a.x - b.x) (a.y - b.y) (a.z - b.z)
 
 pfq6Mul :: Term s PFq6 -> Term s PFq6 -> Term s PFq6
-pfq6Mul at bt = P.do
-  a <- pletFields @'["x", "y", "z"] at
-  b <- pletFields @'["x", "y", "z"] bt
-  xx <- plet (a.x * b.x)
-  yy <- plet (a.y * b.y)
-  zz <- plet (a.z * b.z)
-  cx <- plet $ (pmulXiFq2 # ((a.y + a.z) * (b.y + b.z) - yy - zz)) + xx
-  cy <- plet $ ((a.x + a.y) * (b.x + b.y)) - xx - yy + (pmulXiFq2 # zz)
-  cz <- plet $ ((a.x + a.z) * (b.x + b.z)) - xx + yy - zz
-  pFq6 cx cy cz
+pfq6Mul at bt = pfq6Mul' # at # bt
+
+pfq6Mul' :: Term s (PFq6 :--> PFq6 :--> PFq6)
+pfq6Mul' = phoistAcyclic $ plam
+  \at bt -> P.do
+    a <- pletFields @'["x", "y", "z"] at
+    b <- pletFields @'["x", "y", "z"] bt
+    xx <- plet (a.x * b.x)
+    yy <- plet (a.y * b.y)
+    zz <- plet (a.z * b.z)
+    cx <- plet $ (pmulXiFq2 # ((a.y + a.z) * (b.y + b.z) - yy - zz)) + xx
+    cy <- plet $ ((a.x + a.y) * (b.x + b.y)) - xx - yy + (pmulXiFq2 # zz)
+    cz <- plet $ ((a.x + a.z) * (b.x + b.z)) - xx + yy - zz
+    pFq6 cx cy cz
+
+pfq6Inv :: Term s PFq6 -> Term s PFq6
+pfq6Inv at = pfq6Inv' # at
 
 -- | Multiplicative inverse
-pfq6Inv :: Term s PFq6 -> Term s PFq6
-pfq6Inv at = P.do
-  a <- pletFields @'["x", "y", "z"] at
-  c0 <- plet $ a.x * a.x - a.y * a.z * pxi
-  c1 <- plet $ a.z * a.z * pxi - a.x * a.y
-  c2 <- plet $ a.y * a.y - a.x * a.z
-  t <- plet $ pfq2Inv ((a.z * c1 + a.y * c2) * pxi + a.x * c0)
-  pFq6 (t * c0) (t * c1) (t * c2)
+pfq6Inv' :: Term s (PFq6 :--> PFq6)
+pfq6Inv' = phoistAcyclic $ plam
+  \at -> P.do
+    a <- pletFields @'["x", "y", "z"] at
+    c0 <- plet $ a.x * a.x - a.y * a.z * pxi
+    c1 <- plet $ a.z * a.z * pxi - a.x * a.y
+    c2 <- plet $ a.y * a.y - a.x * a.z
+    t <- plet $ pfq2Inv ((a.z * c1 + a.y * c2) * pxi + a.x * c0)
+    pFq6 (t * c0) (t * c1) (t * c2)
 
 {- | Multiply by @xi@ (cubic nonresidue in @Fq2@) and reorder
  coefficients
@@ -115,3 +136,12 @@ instance PlutusTx.Monoid (Term s PFq6) where
 
 instance PlutusTx.Group (Term s PFq6) where
   inv = pfq6Inv
+
+instance PSemigroup PFq6 where
+  pappend = pfq6Mul
+
+instance PMonoid PFq6 where
+  pidentity = 1
+
+instance PGroup PFq6 where
+  pinv = pfq6Inv
