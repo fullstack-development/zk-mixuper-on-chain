@@ -74,14 +74,45 @@ library
   exposed-modules:
     Ext.Plutarch.Api.V2.Contexts
     Ext.Plutarch.Api.V2.Value
+    Ext.Plutarch.ByteString
     Ext.Plutarch.Extra.Run
     Ext.Plutarch.List
     Ext.Plutarch.Num
+    Ext.Plutarch.Rational
+    Ext.PlutusTx.Builtins
     Ext.PlutusTx.List
+    Ext.PlutusTx.Monad
     Ext.PlutusTx.Numeric
     Mixer.Datum
     Mixer.Datum.Plutus
     Mixer.Script
+    Mixer.Script.Withdraw
+    Plutarch.Pairing
+    Plutarch.Pairing.BN128
+    Plutarch.Pairing.Group
+    Plutarch.Pairing.Group.Fq
+    Plutarch.Pairing.Group.Fq12
+    Plutarch.Pairing.Group.Fq2
+    Plutarch.Pairing.Group.Fq6
+    Plutarch.Pairing.Group.Point
+    Plutarch.Pairing.MillerAlgorithm
+    Plutarch.ZK
+    Plutarch.ZK.Example
+    Plutarch.ZK.Types
+    Plutarch.ZK.Validation
+    Plutus.Pairing
+    Plutus.Pairing.BN128
+    Plutus.Pairing.Group
+    Plutus.Pairing.Group.Fq
+    Plutus.Pairing.Group.Fq12
+    Plutus.Pairing.Group.Fq2
+    Plutus.Pairing.Group.Fq6
+    Plutus.Pairing.Group.Point
+    Plutus.Pairing.MillerAlgorithm
+    Plutus.ZK
+    Plutus.ZK.Example
+    Plutus.ZK.Types
+    Plutus.ZK.Validation
 
   hs-source-dirs:  src
   build-depends:

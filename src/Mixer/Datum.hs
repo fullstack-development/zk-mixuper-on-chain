@@ -1,19 +1,28 @@
 module Mixer.Datum where
 
-import Plutarch.Api.V2 (PCurrencySymbol, PMaybeData, PTokenName, PTuple)
+import Plutarch.Api.V2 (PCurrencySymbol, PMaybeData, PPubKeyHash, PTokenName, PTuple)
 import Plutarch.DataRepr (PDataFields)
 import Plutarch.Prelude
+import Plutarch.ZK (PFr, PProofData, PVerificationKeyData)
 
 -- | A type for representing hash digests.
 type PHash = PByteString
 
 type PLovelace = PInteger
 
--- | Just merkle tree root for now
-type PPublicInput = PInteger
+newtype PPublicInput (s :: S)
+  = PPublicInput (Term s (PDataRecord '["treeRoot" := PFr, "nullifierHash" := PFr, "recipient" := PPubKeyHash, "relayer" := PPubKeyHash, "fee" := PFr]))
+  deriving stock (Generic)
+  deriving anyclass (PlutusType, PDataFields, PIsData)
+
+instance DerivePlutusType PPublicInput where
+  type DPTStrat _ = PlutusTypeData
+
+instance PTryFrom PData PPublicInput
+instance PTryFrom PData (PAsData PPublicInput)
 
 newtype PWithdrawRedeemer (s :: S)
-  = PWithdraw (Term s (PDataRecord '["publicInput" := PPublicInput]))
+  = PWithdraw (Term s (PDataRecord '["publicInput" := PPublicInput, "proof" := PProofData]))
   -- TODO(?) Close redeemer for pool operator / creator (fixed pkh)
   -- Close (Term s (PDataRecord '[]))
   deriving stock (Generic)
@@ -26,7 +35,7 @@ instance PTryFrom PData PWithdrawRedeemer
 instance PTryFrom PData (PAsData PWithdrawRedeemer)
 
 newtype PWithdrawConfig (s :: S)
-  = PWithdrawConfig (Term s (PDataRecord '["protocolCurrency" := PCurrencySymbol, "depositTreeTokenName" := PTokenName, "vaultTokenName" := PTokenName, "nullifierStoreTokenName" := PTokenName, "poolNominal" := PLovelace]))
+  = PWithdrawConfig (Term s (PDataRecord '["protocolCurrency" := PCurrencySymbol, "depositTreeTokenName" := PTokenName, "vaultTokenName" := PTokenName, "nullifierStoreTokenName" := PTokenName, "poolNominal" := PLovelace, "vk" := PVerificationKeyData]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData)
 
