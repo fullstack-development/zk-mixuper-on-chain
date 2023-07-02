@@ -1,4 +1,4 @@
-# Revision history for tornadano
+# Revision history for zk-mixuper-on-chain
 
 ## 0.1.0.0 -- YYYY-mm-dd
 

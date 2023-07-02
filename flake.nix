@@ -1,5 +1,5 @@
 {
-  description = "tornadano on-chain code";
+  description = "zk-mixuper-on-chain on-chain code";
 
   inputs = {
     haskellNix.url = "github:input-output-hk/haskell.nix";
@@ -38,7 +38,7 @@
           ];
           inherit (haskellNix) config;
         };
-        tornadano = pkgs.haskell-nix.cabalProject' {
+        zk-mixuper-on-chain = pkgs.haskell-nix.cabalProject' {
           src = ./.;
           compiler-nix-name = "ghc925";
           shell = {
@@ -63,7 +63,7 @@
 
           inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = CHaP; };
         };
-        flake = tornadano.flake { };
+        flake = zk-mixuper-on-chain.flake { };
       in
       flake // {
         checks = flake.checks // { formatting-checks = pre-commit-check; };

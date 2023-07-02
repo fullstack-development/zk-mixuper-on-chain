@@ -85,7 +85,6 @@ template Withdraw(levels) {
     feeSquare <== fee * fee;
 }
 
-// TODO can we get away with less than 20 levels?
 // There are 2^height leaves in a perfect binary tree
 // Height = levels
 component main {public [root, nullifierHash, recipient, relayer, fee]} = Withdraw(2);

@@ -21,10 +21,6 @@ import Plutarch.Prelude
 import qualified PlutusTx.Monoid as PlutusTx
 import qualified PlutusTx.Prelude as PlutusTx
 
--- TODO
--- class PNormilize
--- pnormalize x = mapfields (fq `pmod` q) x
-
 newtype PFq12 (s :: S)
   = PFq12 (Term s (PDataRecord '["x" := PFq6, "y" := PFq6]))
   deriving stock (Generic)

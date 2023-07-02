@@ -23,8 +23,6 @@ instance PTryFrom PData (PAsData PPublicInput)
 
 newtype PWithdrawRedeemer (s :: S)
   = PWithdraw (Term s (PDataRecord '["publicInput" := PPublicInput, "proof" := PProofData]))
-  -- TODO(?) Close redeemer for pool operator / creator (fixed pkh)
-  -- Close (Term s (PDataRecord '[]))
   deriving stock (Generic)
   deriving anyclass (PlutusType, PDataFields, PIsData)
 

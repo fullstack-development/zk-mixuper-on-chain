@@ -1,5 +1,5 @@
 cabal-version:      3.6
-name:               tornadano
+name:               zk-mixuper-on-chain
 version:            0.1.0.0
 synopsis:
 
@@ -150,7 +150,7 @@ executable dump-script
     , plutus-ledger-api
     , ply-plutarch
     , text
-    , tornadano
+    , zk-mixuper-on-chain
 
 -- LANGUAGE extensions used by modules in this package.
 -- other-extensions:
