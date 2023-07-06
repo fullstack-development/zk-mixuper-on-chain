@@ -74,6 +74,7 @@ validatorLogic = plam \(pfromData -> config) d r ctx' -> P.do
         # conf.protocolCurrency
         # conf.vaultTokenName
         # info.inputs
+  -- TODO! vault output should have the same address as vault input, otherwise script should fail
   vaultOutput <-
     pletFields @'["value", "datum"] $
       pgetOnlyOneOutputFromList #$ filterOutputsByToken # conf.protocolCurrency # conf.vaultTokenName # info.outputs
